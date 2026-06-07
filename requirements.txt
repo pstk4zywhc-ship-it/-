@@ -1,4 +1,1 @@
 pyTelegramBotAPI
-lxml-html-clean
-python-aternos==3.0.3
-
