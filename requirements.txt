@@ -1,2 +1,2 @@
 pyTelegramBotAPI
-cloudscraper
+requests
