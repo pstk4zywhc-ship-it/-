@@ -1,42 +1,36 @@
 import telebot
-import requests
+from python_aternos import Client
 
 TOKEN = "8991347836:AAFjIPf0Nggic9kfto7VuCsHP3QvUiwhJ0M"
 bot = telebot.TeleBot(TOKEN)
 
-# بيانات حسابك في أترنوس
+# بيانات حسابك الحالي مباشرة
 ATERNOS_USER = "qusai2000"
 ATERNOS_PASS = "qusai123@"
 
 @bot.message_handler(commands=['start'])
 def start(message):
-    bot.reply_to(message, "🚀 أهلاً بك يا قُصي! البوت مستقر الآن على سيرفر Railway وجاهز للتحكم بـ Aternos!")
+    bot.reply_to(message, "🚀 أهلاً بك يا قُصي! البوت مستقر الآن على سيرفر Railway وجاهز للتحكم بـ Aternos بنفس حسابك!")
 
 @bot.message_handler(commands=['create'])
 def create_server(message):
-    msg = bot.reply_to(message, "⏳ جاري الاتصال بـ Aternos وتشغيل السيرفر تلقائياً...")
-    
-    # استخدام نظام الـ API المباشر لتفادي انهيار السيرفر وحظر البروكسي
-    login_url = f"https://aternos.org/api/login"
-    payload = {
-        'user': ATERNOS_USER,
-        'password': ATERNOS_PASS
-    }
+    msg = bot.reply_to(message, "⏳ جاري الاتصال بحسابك في Aternos وتوصيل السيرفر...")
     
     try:
-        session = requests.Session()
-        # إرسال طلب تسجيل دخول آمن يشبه المتصفح الطبيعي
-        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
-        response = session.post(login_url, data=payload, headers=headers, timeout=10)
+        # تسجيل الدخول بنظام المحاكاة الحديث لتخطي الحماية
+        aternos = Client.from_credentials(ATERNOS_USER, ATERNOS_PASS)
+        servers = aternos.list_servers()
         
-        # كود لتشغيل السيرفر مباشرة بعد الدخول الناجح
-        if response.status_code == 200:
-            bot.edit_message_text("✅ تم إرسال أمر التشغيل إلى Aternos بنجاح! السيرفر يقلع الآن 🎮", message.chat.id, msg.message_id)
+        if servers:
+            myserver = servers[0]
+            # أمر تشغيل السيرفر مباشرة
+            myserver.start()
+            bot.edit_message_text("✅ أبشرك يا قُصي! تم تشغيل سيرفر ماين كرافت بنجاح وطار الحظر! ادخل العب الآن 🎮", message.chat.id, msg.message_id)
         else:
-            bot.edit_message_text("⚠️ أترنوس يتطلب تأكيداً إضافياً (Cloudflare). لتشغيل السيرفر فوراً بدون قيود، يفضل تفعيل خيار الـ Access/Share في أترنوس لحساب آخر لتسهيل الربط.", message.chat.id, msg.message_id)
+            bot.edit_message_text("❌ لم يتم العثور على أي سيرفرات داخل هذا الحساب.", message.chat.id, msg.message_id)
             
     except Exception as e:
-        bot.edit_message_text(f"❌ خطأ غير متوقع أثناء الاتصال:\n`{str(e)}`", message.chat.id, msg.message_id, parse_mode="Markdown")
+        error_msg = str(e)
+        bot.edit_message_text(f"❌ حدث خطأ أثناء محاولة التشغيل:\n`{error_msg}`", message.chat.id, msg.message_id, parse_mode="Markdown")
 
 bot.infinity_polling()
-#test
