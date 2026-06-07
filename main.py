@@ -39,3 +39,4 @@ def create_server(message):
         bot.edit_message_text(f"❌ خطأ غير متوقع أثناء الاتصال:\n`{str(e)}`", message.chat.id, msg.message_id, parse_mode="Markdown")
 
 bot.infinity_polling()
+#test
