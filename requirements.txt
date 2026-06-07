@@ -1,0 +1,2 @@
+pyTelegramBotAPI
+python-aternos==3.0.3
