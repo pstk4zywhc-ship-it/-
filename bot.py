@@ -1,16 +1,12 @@
 import logging
-import asyncio
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes, MessageHandler, filters
-from python_aternos import Client
 
-# إعدادات المراقبة والأخطاء
+# إعدادات المراقبة
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
-# توكن البوت الخاص بك
 TOKEN = "8991347836:AAFjIPf0Nggic9kfto7VuCsHP3QvUiwhJ0M"
 
-# قاموس اللغات للبوت (عربي وإنجليزي)
 LANGUAGES = {
     'ar': {
         'welcome': "👋 مرحباً بك في بوت إدارة وصناعة سيرفرات ماين كرافت العالمي!\n\nاختر ما تريد القيام به من القائمة:",
@@ -46,7 +42,6 @@ user_states = {}
 def get_lang(user_id):
     return user_preferences.get(user_id, 'ar')
 
-# عند الضغط على /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     lang = get_lang(user_id)
@@ -65,7 +60,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif update.callback_query:
         await update.callback_query.edit_message_text(LANGUAGES[lang]['welcome'], reply_markup=reply_markup)
 
-# معالج الأزرار التفاعلية
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -75,7 +69,6 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if data == 'main_menu':
         await start(update, context)
-
     elif data == 'create_srv':
         keyboard = [
             [InlineKeyboardButton(LANGUAGES[lang]['java_type'], callback_data='make_java'),
@@ -83,66 +76,36 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             [InlineKeyboardButton(LANGUAGES[lang]['back'], callback_data='main_menu')]
         ]
         await query.edit_message_text(LANGUAGES[lang]['choose_type'], reply_markup=InlineKeyboardMarkup(keyboard))
-
     elif data == 'make_java':
         await query.edit_message_text(LANGUAGES[lang]['status_working'])
-        await query.message.reply_text("✅ **تم إنشاء سيرفر الجافا بنجاح!**\n📌 يمكنك الآن تشغيله أو تعديل إعداداته من القائمة.")
-
+        await query.message.reply_text("✅ **تم إنشاء سيرفر الجافا بنجاح!**")
     elif data == 'make_bedrock':
         await query.edit_message_text(LANGUAGES[lang]['status_working'])
-        await query.message.reply_text("✅ **تم إنشاء سيرفر البيدروك (الجوال) بنجاح!**\n🔢 البورت الافتراضي: `19132`\n📌 السيرفر جاهز للتشغيل الآن.")
-
+        await query.message.reply_text("✅ **تم إنشاء سيرفر البيدروك (الجوال) بنجاح!**")
     elif data == 'start_srv':
-        await query.edit_message_text("⏳ جاري إرسال أمر تشغيل السيرفر...")
-        await query.message.reply_text("🟢 السيرفر الآن في مرحلة التشغيل (Starting)!")
-        
+        await query.edit_message_text("🟢 تم إرسال أمر تشغيل السيرفر!")
     elif data == 'stop_srv':
-        await query.edit_message_text("⏳ جاري إيقاف السيرفر...")
-        await query.message.reply_text("🔴 تم إطفاء السيرفر بنجاح.")
-
+        await query.edit_message_text("🔴 تم إرسال أمر إيقاف السيرفر!")
     elif data == 'settings':
-        keyboard = [
-            [InlineKeyboardButton("🔗 تغيير الآيبي (Change IP)", callback_data='edit_ip')],
-            [InlineKeyboardButton("👥 تعديل الحد الأقصى للاعبين", callback_data='edit_max_players')],
-            [InlineKeyboardButton(LANGUAGES[lang]['back'], callback_data='main_menu')]
-        ]
-        await query.edit_message_text("⚙️ **إعدادات السيرفر:**\n\nيمكنك التحكم بخيارات السيرفر من هنا:", reply_markup=InlineKeyboardMarkup(keyboard))
-
-    elif data == 'edit_ip':
-        user_states[user_id] = 'waiting_for_ip'
-        await query.edit_message_text("✏️ أرسل الآن الاسم الجديد للآيبي الذي تريده:")
-
+        keyboard = [[InlineKeyboardButton(LANGUAGES[lang]['back'], callback_data='main_menu')]]
+        await query.edit_message_text("⚙️ **إعدادات السيرفر** لمزيد من التحكم.", reply_markup=InlineKeyboardMarkup(keyboard))
     elif data == 'choose_lang':
         keyboard = [
             [InlineKeyboardButton("العربية 🇸🇦", callback_data='set_lang_ar'),
              InlineKeyboardButton("English 🇺🇸", callback_data='set_lang_en')],
             [InlineKeyboardButton(LANGUAGES[lang]['back'], callback_data='main_menu')]
         ]
-        await query.edit_message_text("🌐 اختر لغة البوت / Choose Bot Language:", reply_markup=InlineKeyboardMarkup(keyboard))
-        
+        await query.edit_message_text("🌐 اختر لغة البوت:", reply_markup=InlineKeyboardMarkup(keyboard))
     elif data.startswith('set_lang_'):
-        new_lang = data.split('_')[2]
-        user_preferences[user_id] = new_lang
+        user_preferences[user_id] = data.split('_')[2]
         query.data = 'main_menu'
-        await start(update, context)
-
-# استقبال النصوص لتغيير الآيبي
-async def handle_text_inputs(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
-    text = update.message.text
-    
-    if user_states.get(user_id) == 'waiting_for_ip':
-        user_states[user_id] = None
-        await update.message.reply_text(f"🎯 تم تغيير آيبي السيرفر بنجاح إلى:\n`{text}.aternos.me`", parse_mode="Markdown")
         await start(update, context)
 
 def main():
     app = Application.builder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CallbackQueryHandler(button_handler))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text_inputs))
-    
-    print("🚀 البوت جاهز ويعمل...")
+    print("🚀 البوت جاهز للاستخدام...")
     app.run_polling()
 
 if __name__ == '__main__':
