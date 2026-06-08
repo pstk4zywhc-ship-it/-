@@ -1,2 +1,2 @@
-telebot
-requests
+python-telegram-bot
+python-aternos
