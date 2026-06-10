@@ -30,18 +30,18 @@ def handle_skin_description(message):
     temp_image_path = f"skin_{message.chat.id}.png"
 
     try:
-        # تحسين البرومبت بالإنجليزية ليعطي تفاصيل أدق
+        # تحسين البرومبت ليفهمه الذكاء الاصطناعي بشكل أفضل
         enhanced_prompt = (
-            f"Minecraft character skin texture, 3D render, {user_description}, pixel art style"
+            f"Minecraft character skin, 3D full body render pose, pixel art style, {user_description}"
         )
         encoded_prompt = urllib.parse.quote(enhanced_prompt)
         
-        # استخدام خادم دمج عالي الاستقرار وسريع جداً مع Railway
-        image_url = f"https://api.v0.models.pollinations.ai/p/{encoded_prompt}?width=1024&height=1024&seed=100"
+        # استخدام رابط توليد مباشر ومستقر جداً وبديل مجاني
+        image_url = f"https://image.pollinations.ai/p/{encoded_prompt}?width=1024&height=1024&nologo=true"
 
-        # محاولة جلب الصورة مع زيادة وقت الانتظار وتخطي الحظر عبر إضافة Headers
+        # إرسال طلب جلب الصورة مع خيار عدم إطالة الانتظار
         headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
-        response = requests.get(image_url, headers=headers, timeout=40)
+        response = requests.get(image_url, headers=headers, timeout=25)
         
         if response.status_code == 200:
             with open(temp_image_path, 'wb') as f:
@@ -55,9 +55,13 @@ def handle_skin_description(message):
                     parse_mode='Markdown'
                 )
         else:
-            # إذا فشل السيرفر الأول، سنستخدم سيرفر احتياطي فوري وسريع جداً لكي لا يقف البوت
+            raise Exception("سيرفر التوليد لم يستجب بشكل صحيح.")
+
+    except Exception as e:
+        # خطة بديلة فورية ومضمونة 100% في حال فشل الاتصال بالذكاء الاصطناعي لتوليد الـ Skin
+        try:
             fallback_url = f"https://robohash.org/{encoded_prompt}.png?set=set4"
-            fallback_res = requests.get(fallback_url, timeout=20)
+            fallback_res = requests.get(fallback_url, timeout=15)
             
             with open(temp_image_path, 'wb') as f:
                 f.write(fallback_res.content)
@@ -66,12 +70,12 @@ def handle_skin_description(message):
                 bot.send_photo(
                     message.chat.id,
                     photo,
-                    caption=f"🎁 السيرفر الرئيسي مضغوط، تفضل هذا التصميم البديل السريع لوصفك: `{user_description}`",
+                    caption=f"🎁 تفضل هذا التصميم السريع لوصفك: `{user_description}`\n*(السيرفر الرئيسي مضغوط حالياً)*",
                     parse_mode='Markdown'
                 )
+        except Exception as fallback_error:
+            bot.reply_to(message, "⚠️ عذراً، هناك ضغط كبير على سيرفرات الصور حالياً. يرجى المحاولة مرة أخرى بعد دقيقة.")
 
-    except Exception as e:
-        bot.reply_to(message, f"⚠️ حدث خطأ أثناء التوليد: {str(e)}")
     finally:
         if bot:
             try:
