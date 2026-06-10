@@ -1,3 +1,22 @@
+import os
+import telebot
+import urllib.parse
+import requests
+
+# توكن التلغرام الخاص بك
+TELEGRAM_BOT_TOKEN = "8991347836:AAFjIPf0Nggic9kfto7VuCsHP3QvUiwhJ0M"
+bot = telebot.TeleBot(TELEGRAM_BOT_TOKEN)
+
+@bot.message_handler(commands=['start', 'help'])
+def send_welcome(message):
+    welcome_text = (
+        "🤖 *أهلاً بك في بوت سكنات ماينكرافت المجاني!* 🤖\n\n"
+        "اكتب لي وصفاً للسكن الذي تريده (باللغة الإنجليزية لأفضل نتائج)، "
+        "وسأقوم بتوليد صورة تعرض لك شكل السكن ثلاثي الأبعاد ومعها خريطة التصميم مجاناً!\n\n"
+        "مثال: `Minecraft skin of a cool neon blue ninja`"
+    )
+    bot.reply_to(message, welcome_text, parse_mode='Markdown')
+
 @bot.message_handler(content_types=['text'])
 def handle_skin_description(message):
     user_description = message.text
@@ -36,7 +55,7 @@ def handle_skin_description(message):
                     parse_mode='Markdown'
                 )
         else:
-            # إذا فشل السيرفر الأول، سنستخدم سيرفر احتياطي فوري وسريع جداً (Avatar/Robo style) لكي لا يقف البوت
+            # إذا فشل السيرفر الأول، سنستخدم سيرفر احتياطي فوري وسريع جداً لكي لا يقف البوت
             fallback_url = f"https://robohash.org/{encoded_prompt}.png?set=set4"
             fallback_res = requests.get(fallback_url, timeout=20)
             
@@ -47,13 +66,20 @@ def handle_skin_description(message):
                 bot.send_photo(
                     message.chat.id,
                     photo,
-                    caption=f"🎁 السيرفر الرئيسي ضغط، تفضل هذا التصميم البديل السريع لوصفك: `{user_description}`",
+                    caption=f"🎁 السيرفر الرئيسي مضغوط، تفضل هذا التصميم البديل السريع لوصفك: `{user_description}`",
                     parse_mode='Markdown'
                 )
 
     except Exception as e:
         bot.reply_to(message, f"⚠️ حدث خطأ أثناء التوليد: {str(e)}")
     finally:
-        bot.delete_message(message.chat.id, waiting_message.message_id)
+        if bot:
+            try:
+                bot.delete_message(message.chat.id, waiting_message.message_id)
+            except:
+                pass
         if os.path.exists(temp_image_path):
             os.remove(temp_image_path)
+
+# تشغيل البوت
+bot.infinity_polling()
