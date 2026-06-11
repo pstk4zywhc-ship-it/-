@@ -17,6 +17,4 @@ bot.on('chat', (username, message) => {
     bot.chat('وقفت')
     bot.clearControlStates()
   }
-
-  bot.chat('سمعت: ' + message)
 })
