@@ -12,17 +12,17 @@ TELEGRAM_TOKEN = "8991347836:AAFjIPf0Nggic9kfto7VuCsHP3QvUiwhJ0M"
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """الرد على أمر البدء"""
-    await update.message.reply_text("أهلاً بك! أنا بوت ذكي مثل ChatGPT يعمل الآن بشكل مستقر. أرسل لي أي سؤال! 🤖")
+    await update.message.reply_text("أهلاً بك! أنا بوت ذكي مثل ChatGPT يعمل الآن بشكل مستقر 24/7. أرسل لي أي سؤال! 🤖")
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """إرسال رسالة المستخدم للذكاء الاصطناعي والرد بها"""
     user_message = update.message.text
     
-    # إظهار أن البوت يكتب الآن (typing...)
+    # إظهار حالة "جاري الكتابة..." في التلجرام
     await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing")
     
     try:
-        # تشغيل طلب الذكاء الاصطناعي بشكل آمن ومجاني بالكامل
+        # تشغيل طلب الذكاء الاصطناعي مجاناً وبدون مفاتيح
         loop = asyncio.get_event_loop()
         response = await loop.run_in_executor(
             None, 
