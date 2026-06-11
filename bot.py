@@ -1,31 +1,32 @@
 import logging
+import asyncio
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
-import g4f
+import freegpt
 
 # إعداد السجلات لمراقبة العمليات والأخطاء
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
-# التوكن الخاص بك مدمج وجاهز
+# التوكن الخاص بك
 TELEGRAM_TOKEN = "8991347836:AAFjIPf0Nggic9kfto7VuCsHP3QvUiwhJ0M"
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """الرد على أمر البدء"""
-    await update.message.reply_text("أهلاً بك! أنا بوت ذكي مثل ChatGPT. أرسل لي أي سؤال وسأجيبك فوراً! 🤖")
+    await update.message.reply_text("أهلاً بك! أنا بوت ذكي مثل ChatGPT يعمل الآن بشكل مستقر. أرسل لي أي سؤال! 🤖")
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """إرسال رسالة المستخدم للذكاء الاصطناعي عبر مزود مجاني مستقر"""
+    """إرسال رسالة المستخدم للذكاء الاصطناعي والرد بها"""
     user_message = update.message.text
     
     # إظهار أن البوت يكتب الآن (typing...)
     await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing")
     
     try:
-        # استخدام مزود Blackbox المجاني لتفادي خطأ الـ API Key والاتصال المستقر
-        response = g4f.ChatCompletion.create(
-            model=g4f.models.default,
-            provider=g4f.Provider.Blackbox,
-            messages=[{"role": "user", "content": user_message}],
+        # تشغيل طلب الذكاء الاصطناعي بشكل آمن ومجاني بالكامل
+        loop = asyncio.get_event_loop()
+        response = await loop.run_in_executor(
+            None, 
+            lambda: freegpt.gpt3.ChatCompletion.create(prompt=user_message)
         )
         
         await update.message.reply_text(response)
