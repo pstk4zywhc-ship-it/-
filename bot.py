@@ -1,7 +1,8 @@
 import logging
+import asyncio
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
-import requests
+from google import genai
 
 # إعداد السجلات لمراقبة العمليات والأخطاء
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
@@ -9,45 +10,43 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 # توكن التلجرام الخاص بك
 TELEGRAM_TOKEN = "8991347836:AAFjIPf0Nggic9kfto7VuCsHP3QvUiwhJ0M"
 
-# مفتاح جوجل جيميناي الخاص بك مدمج وجاهز
-GEMINI_API_KEY = "AQ.Ab8RN6I3OKsk-OwfxKBRtRb7_0Sw44aE8KbvOifpps07_7G0Xg"
+# مفتاح جوجل جيميناي الحقيقي (احرص على استخراج المفتاح الصحيح تباعاً للخطوات بالأسفل)
+GEMINI_API_KEY = "ضع_مفتاح_جيميناي_الحقيقي_هنا"
+
+# إعداد عميل جيميناي الرسمي
+client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY != "ضع_مفتاح_جيميناي_الحقيقي_هنا" else None
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """الرد على أمر البدء"""
     await update.message.reply_text("أهلاً بك! أنا بوت ذكي مدعوم بـ Google Gemini ومستقر 24/7. أرسل لي أي سؤال وسأجيبك فوراً! 🤖🔥")
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """الاتصال المباشر بـ Google Gemini API السريع والمستقر"""
+    """الاتصال عبر مكتبة جوجل الرسمية وبشكل متوافق مع الحزم الحديثة"""
     user_message = update.message.text
     
     # إظهار حالة "جاري الكتابة..." في التلجرام
     await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing")
     
+    if not client:
+        await update.message.reply_text("⚠️ يرجى إضافة مفتاح GEMINI_API_KEY الحقيقي داخل الكود أولاً!")
+        return
+
     try:
-        # رابط الـ API الرسمي لنموذج جيميناي
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
+        # تشغيل طلب توليد النص في خيط منفصل لمنع تجميد البوت
+        loop = asyncio.get_event_loop()
+        response = await loop.run_in_executor(
+            None,
+            lambda: client.models.generate_content(
+                model='gemini-2.5-flash',
+                contents=user_message,
+            )
+        )
         
-        headers = {'Content-Type': 'application/json'}
-        payload = {
-            "contents": [{"parts": [{"text": user_message}]}]
-        }
-        
-        # إرسال الطلب لجوجل
-        response = requests.post(url, headers=headers, json=payload, timeout=30)
-        
-        if response.status_code == 200:
-            data = response.json()
-            # استخراج رد الذكاء الاصطناعي
-            bot_reply = data['candidates'][0]['content']['parts'][0]['text']
-        else:
-            logging.error(f"Gemini Error: {response.text}")
-            bot_reply = "عذراً، واجهت مشكلة في معالجة الطلب من خوادم جوجل حالياً. حاول مجدداً."
-            
-        await update.message.reply_text(bot_reply)
+        await update.message.reply_text(response.text)
         
     except Exception as e:
-        logging.error(f"Error: {e}")
-        await update.message.reply_text("عذراً، حدث خطأ داخلي أثناء الاتصال بالذكاء الاصطناعي. حاول مرة أخرى.")
+        logging.error(f"Gemini Library Error: {e}")
+        await update.message.reply_text("عذراً، واجهت مشكلة في معالجة الطلب من خوادم جوجل. تأكد من صحة الـ API Key وحاول مجدداً.")
 
 def main():
     """بدء تشغيل البوت"""
@@ -56,7 +55,7 @@ def main():
     application.add_handler(CommandHandler("start", start))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
-    print("⚡ البوت يعمل الآن بنجاح واستقرار على جيميناي...")
+    print("⚡ البوت يعمل الآن بنجاح واستقرار...")
     application.run_polling()
 
 if __name__ == '__main__':
