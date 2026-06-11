@@ -1,11 +1,12 @@
 {
-  "name": "bedrock-ai-bot",
+  "name": "mc-gpt-bot",
   "version": "1.0.0",
   "main": "bot.js",
   "scripts": {
     "start": "node bot.js"
   },
   "dependencies": {
-    "bedrock-protocol": "^3.0.0"
+    "bedrock-protocol": "^3.0.0",
+    "openai": "^4.0.0"
   }
 }
