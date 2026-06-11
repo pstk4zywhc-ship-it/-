@@ -7,14 +7,14 @@ from google import genai
 # إعداد السجلات لمراقبة العمليات والأخطاء
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
-# توكن التلجرام الخاص بك
+# توكن التلجرام الخاص بك المدمج
 TELEGRAM_TOKEN = "8991347836:AAFjIPf0Nggic9kfto7VuCsHP3QvUiwhJ0M"
 
-# مفتاح جوجل جيميناي الحقيقي (احرص على استخراج المفتاح الصحيح تباعاً للخطوات بالأسفل)
-GEMINI_API_KEY = "ضع_مفتاح_جيميناي_الحقيقي_هنا"
+# مفتاح جوجل جيميناي الحقيقي الخاص بك تم دمجه بنجاح هنا
+GEMINI_API_KEY = "AQ.Ab8RN6IL0MdnRr2PaqKISoIBMjWqKJMvegcQ74F_J7sk3raQZQ"
 
-# إعداد عميل جيميناي الرسمي
-client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY != "ضع_مفتاح_جيميناي_الحقيقي_هنا" else None
+# إعداد عميل جيميناي الرسمي باستخدام المفتاح
+client = genai.Client(api_key=GEMINI_API_KEY)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """الرد على أمر البدء"""
@@ -27,12 +27,8 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # إظهار حالة "جاري الكتابة..." في التلجرام
     await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing")
     
-    if not client:
-        await update.message.reply_text("⚠️ يرجى إضافة مفتاح GEMINI_API_KEY الحقيقي داخل الكود أولاً!")
-        return
-
     try:
-        # تشغيل طلب توليد النص في خيط منفصل لمنع تجميد البوت
+        # تشغيل طلب توليد النص في خلفية آمنة لمنع تجميد البوت
         loop = asyncio.get_event_loop()
         response = await loop.run_in_executor(
             None,
@@ -46,7 +42,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
     except Exception as e:
         logging.error(f"Gemini Library Error: {e}")
-        await update.message.reply_text("عذراً، واجهت مشكلة في معالجة الطلب من خوادم جوجل. تأكد من صحة الـ API Key وحاول مجدداً.")
+        await update.message.reply_text("عذراً، واجهت مشكلة في معالجة الطلب من خوادم جوجل. يرجى المحاولة مرة أخرى.")
 
 def main():
     """بدء تشغيل البوت"""
