@@ -3,7 +3,7 @@ const bedrock = require('bedrock-protocol')
 const client = bedrock.createClient({
   host: 'qusai2000.aternos.me',
   port: 44559,
-  username: 'Qusai_Bot'
+  username: 'Qusai_AI'
 })
 
 function chat(msg) {
@@ -15,37 +15,67 @@ function chat(msg) {
   })
 }
 
+// 🧠 “دماغ AI بسيط”
+function brain(msg) {
+  msg = msg.toLowerCase()
+
+  if (msg.includes('تعال')) return 'follow'
+  if (msg.includes('خشب')) return 'wood'
+  if (msg.includes('قف')) return 'stop'
+  if (msg.includes('تجول')) return 'wander'
+
+  return 'unknown'
+}
+
+// 🏃 حركة عشوائية (محاكاة ذكاء)
+let interval
+
+function wander() {
+  clearInterval(interval)
+
+  interval = setInterval(() => {
+    client.queue('move_player', {
+      movement: {
+        x: (Math.random() - 0.5),
+        y: 0,
+        z: (Math.random() - 0.5)
+      }
+    })
+  }, 1500)
+}
+
 client.on('spawn', () => {
-  console.log('Bot spawned!')
-  chat('دخلت السيرفر 👋')
+  console.log('AI Bot online')
+  chat('🤖 جاهز أساعدك!')
 })
 
 client.on('text', (packet) => {
   const msg = packet?.parameters?.message || ''
+  console.log('User:', msg)
 
-  console.log('Chat:', msg)
+  const action = brain(msg)
 
-  // أوامر عربية
-  if (msg === 'تعال') {
-    chat('جايك!')
+  if (action === 'follow') {
+    chat('تمام، بتبعك 👣')
+    clearInterval(interval)
   }
 
-  if (msg === 'خشب') {
-    chat('ببدأ أجمع خشب 🌳')
-
-    // حركة بسيطة (تقريب فكرة)
-    setInterval(() => {
-      client.queue('move_player', {
-        movement: {
-          x: Math.random() - 0.5,
-          y: 0,
-          z: Math.random() - 0.5
-        }
-      })
-    }, 2000)
+  else if (action === 'wood') {
+    chat('🌳 بجمع خشب الآن (تقريباً)...')
+    wander()
   }
 
-  if (msg === 'قف') {
-    chat('وقفت 🛑')
+  else if (action === 'stop') {
+    chat('🛑 وقفت')
+    clearInterval(interval)
+  }
+
+  else if (action === 'wander') {
+    chat('أتمشى شوي 🤖')
+    wander()
+  }
+
+  else {
+    chat('ما فهمت، جرب: تعال / خشب / قف')
   }
 })
