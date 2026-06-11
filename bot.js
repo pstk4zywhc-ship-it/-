@@ -1,81 +1,104 @@
 const bedrock = require('bedrock-protocol')
+const OpenAI = require('openai')
 
-const client = bedrock.createClient({
+const client = new OpenAI({
+  apiKey: "PUT_YOUR_OPENAI_KEY_HERE"
+})
+
+const bot = bedrock.createClient({
   host: 'qusai2000.aternos.me',
   port: 44559,
-  username: 'Qusai_AI'
+  username: 'GPT_Bot'
 })
 
 function chat(msg) {
-  client.queue('text', {
+  bot.queue('text', {
     type: 'chat',
     needs_translation: false,
-    source_name: client.username,
+    source_name: bot.username,
     message: msg
   })
 }
 
-// 🧠 “دماغ AI بسيط”
-function brain(msg) {
-  msg = msg.toLowerCase()
+async function askGPT(message) {
+  const response = await client.chat.completions.create({
+    model: "gpt-4o-mini",
+    messages: [
+      {
+        role: "system",
+        content: `
+أنت دماغ بوت داخل ماينكرافت.
+حوّل كلام اللاعب إلى أوامر فقط:
 
-  if (msg.includes('تعال')) return 'follow'
-  if (msg.includes('خشب')) return 'wood'
-  if (msg.includes('قف')) return 'stop'
-  if (msg.includes('تجول')) return 'wander'
+الأوامر:
+- follow
+- stop
+- wood
+- wander
 
-  return 'unknown'
+ارجع JSON فقط مثل:
+{"action":"follow"}
+        `
+      },
+      {
+        role: "user",
+        content: message
+      }
+    ]
+  })
+
+  return JSON.parse(response.choices[0].message.content)
 }
 
-// 🏃 حركة عشوائية (محاكاة ذكاء)
+// حركة بسيطة
 let interval
 
 function wander() {
   clearInterval(interval)
-
   interval = setInterval(() => {
-    client.queue('move_player', {
+    bot.queue('move_player', {
       movement: {
-        x: (Math.random() - 0.5),
+        x: Math.random() - 0.5,
         y: 0,
-        z: (Math.random() - 0.5)
+        z: Math.random() - 0.5
       }
     })
   }, 1500)
 }
 
-client.on('spawn', () => {
-  console.log('AI Bot online')
-  chat('🤖 جاهز أساعدك!')
+bot.on('spawn', () => {
+  chat('🤖 ChatGPT Bot جاهز!')
 })
 
-client.on('text', (packet) => {
+bot.on('text', async (packet) => {
   const msg = packet?.parameters?.message || ''
-  console.log('User:', msg)
+  console.log("User:", msg)
 
-  const action = brain(msg)
+  try {
+    const result = await askGPT(msg)
 
-  if (action === 'follow') {
-    chat('تمام، بتبعك 👣')
-    clearInterval(interval)
-  }
+    if (result.action === 'follow') {
+      chat('👣 ببدأ أتابعك')
+      clearInterval(interval)
+    }
 
-  else if (action === 'wood') {
-    chat('🌳 بجمع خشب الآن (تقريباً)...')
-    wander()
-  }
+    else if (result.action === 'wood') {
+      chat('🌳 بجمع خشب')
+      wander()
+    }
 
-  else if (action === 'stop') {
-    chat('🛑 وقفت')
-    clearInterval(interval)
-  }
+    else if (result.action === 'stop') {
+      chat('🛑 توقفت')
+      clearInterval(interval)
+    }
 
-  else if (action === 'wander') {
-    chat('أتمشى شوي 🤖')
-    wander()
-  }
+    else if (result.action === 'wander') {
+      chat('🚶 أتمشى')
+      wander()
+    }
 
-  else {
-    chat('ما فهمت، جرب: تعال / خشب / قف')
+  } catch (e) {
+    chat('صار خطأ في الذكاء الاصطناعي')
+    console.log(e)
   }
 })
