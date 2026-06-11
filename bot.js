@@ -2,7 +2,7 @@ const bedrock = require('bedrock-protocol')
 const OpenAI = require('openai')
 
 const client = new OpenAI({
-  apiKey: "PUT_YOUR_OPENAI_KEY_HERE"
+  apiKey: "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"
 })
 
 const bot = bedrock.createClient({
