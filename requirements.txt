@@ -1,2 +1,2 @@
-python-telegram-bot
-google-genai
+pip install -r requirements.txt
+python bot.py
