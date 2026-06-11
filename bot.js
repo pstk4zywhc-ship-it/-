@@ -1,21 +1,22 @@
+const bedrock = require('bedrock-protocol')
 
-const mineflayer = require('mineflayer')
-
-const bot = mineflayer.createBot({
-  host: 'localhost',   // لاحقًا تغيّرها لسيرفر حقيقي
-  port: 25565,
-  username: 'Qusai'
+const client = bedrock.createClient({
+  host: 'qusai2000.aternos.me',
+  port: 44559,
+  username: 'Qusai_Bot'
 })
 
-bot.on('chat', (username, message) => {
-  if (username === bot.username) return
+client.on('text', (packet) => {
+  console.log(packet)
 
-  if (message === 'تعال') {
-    bot.chat('جايك!')
-  }
+  const msg = packet?.parameters?.message || ''
 
-  if (message === 'اقف') {
-    bot.chat('وقفت')
-    bot.clearControlStates()
+  if (msg === 'تعال') {
+    client.queue('text', {
+      type: 'chat',
+      needs_translation: false,
+      source_name: client.username,
+      message: 'جايك!'
+    })
   }
 })
