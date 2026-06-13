@@ -1,193 +1,122 @@
-# ============================================================
-# بوت الأمن السيبراني - نسخة فخمة | Cyber Security Bot
-# ============================================================
+import re
+import time
+from datetime import datetime
+from collections import defaultdict
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 
-import subprocess
-import sys
-import importlib
-import threading
-import random
-
-# تثبيت المكتبات تلقائياً
-def install_and_import(package):
-    try:
-        importlib.import_module(package)
-    except ImportError:
-        subprocess.check_call([sys.executable, "-m", "pip", "install", package])
-
-for pkg in ["requests", "flask", "telebot"]:
-    install_and_import(pkg)
-
-import telebot
-import requests
-from flask import Flask
-from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
-
-# ========== التوكن ==========
 TOKEN = "8991347836:AAFjIPf0Nggic9kfto7VuCsHP3QvUiwhJ0M"
-bot = telebot.TeleBot(TOKEN)
 
-# ========== سيرفر Flask ==========
-flask_app = Flask(__name__)
+# ------------------- قوائم الحماية -------------------
+failed_attempts = defaultdict(int)
+blocked_users = {}
+user_log = defaultdict(list)
 
-@flask_app.route('/')
-def home():
-    return "✅ بوت الأمن السيبراني شغال 24 ساعة"
+# ------------------- الحماية من التكرار -------------------
+def is_blocked(user_id):
+    if user_id in blocked_users and time.time() < blocked_users[user_id]:
+        return True
+    elif user_id in blocked_users:
+        del blocked_users[user_id]
+    return False
 
-# ========== دوال المساعدة ==========
-def get_security_tip():
-    tips = [
-        "🔐 استخدم كلمة مرور مختلفة لكل حساب",
-        "📱 فعّل المصادقة الثنائية (2FA) في كل خدماتك",
-        "⚠️ لا تفتح روابط مجهولة المصدر",
-        "🛡️ حدث برامجك ونظامك باستمرار",
-        "🔒 استخدم مدير كلمات مرور موثوق",
-        "📧 لا تشارك معلوماتك الحساسة عبر البريد",
-        "🌐 تأكد أن المواقع تستخدم HTTPS",
-        "📱 لا تحمل تطبيقات من مصادر غير رسمية"
-    ]
-    return random.choice(tips)
+# ------------------- تحليل كلمة المرور -------------------
+def password_strength(pwd):
+    score, notes = 0, []
+    if len(pwd) >= 12: score += 2
+    else: notes.append("❌ الطول أقل من 12")
+    if re.search(r'[A-Z]', pwd): score += 1
+    else: notes.append("❌ لا يحتوي على حروف كبيرة")
+    if re.search(r'[a-z]', pwd): score += 1
+    else: notes.append("❌ لا يحتوي على حروف صغيرة")
+    if re.search(r'\d', pwd): score += 1
+    else: notes.append("❌ لا يحتوي على أرقام")
+    if re.search(r'[!@#$%^&*(),.?":{}|<>]', pwd): score += 2
+    else: notes.append("❌ لا يحتوي على رموز خاصة")
+    if score >= 6: result = "✅ قوية جداً"
+    elif score >= 4: result = "⚠️ متوسطة"
+    else: result = "🔴 ضعيفة"
+    return result, score, notes
 
-def check_password_strength(password):
-    score = 0
-    if len(password) >= 8:
-        score += 1
-    if any(c.isupper() for c in password):
-        score += 1
-    if any(c.islower() for c in password):
-        score += 1
-    if any(c.isdigit() for c in password):
-        score += 1
-    if any(c in "!@#$%^&*" for c in password):
-        score += 1
+# ------------------- كشف التصيد -------------------
+def detect_phishing(text):
+    phishing_keywords = ["تحديث حسابك", "تسجيل الدخول", "أمن", "تأكيد", "بنجاح", "ربط", "تحقق", "كلمة المرور"]
+    suspicious_links = re.findall(r'https?://[^\s]+', text)
+    threat = []
+    for kw in phishing_keywords:
+        if kw in text.lower():
+            threat.append(f"كلمة مفتاحية خطيرة: {kw}")
+    if suspicious_links:
+        threat.append(f"روابط مشبوهة: {suspicious_links}")
+    if "bit.ly" in text or "tinyurl" in text:
+        threat.append("رابط مختصر خطر")
+    return threat if threat else None
+
+# ------------------- الأوامر -------------------
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    keyboard = [[InlineKeyboardButton("🔐 تحليل كلمة مرور", callback_data="check_pwd")]]
+    await update.message.reply_text(
+        "🛡️ بوت الأمن السيبراني التعليمي\n"
+        "- أرسل نصاً لكشف التصيد\n"
+        "- أرسل كلمة مرور لتحليل قوتها\n"
+        "- استخدم /log لعرض نشاطك\n"
+        "- استخدم /reset لحذف سجلك",
+        reply_markup=InlineKeyboardMarkup(keyboard)
+    )
+
+async def log_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    uid = update.effective_user.id
+    if uid not in user_log:
+        await update.message.reply_text("📭 لا يوجد سجل لك بعد.")
+        return
+    logs = user_log[uid][-10:]
+    msg = "\n".join([f"- {l}" for l in logs])
+    await update.message.reply_text(f"📋 آخر 10 أنشطة لك:\n{msg}")
+
+async def reset_log(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_log[update.effective_user.id] = []
+    await update.message.reply_text("✅ تم حذف سجلك بالكامل.")
+
+# ------------------- معالجة الرسائل -------------------
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    uid = update.effective_user.id
+    text = update.message.text
+    now = datetime.now().strftime("%H:%M:%S")
     
-    if score <= 2:
-        return "❌ ضعيفة جداً", "red"
-    elif score <= 3:
-        return "⚠️ ضعيفة", "orange"
-    elif score <= 4:
-        return "✅ مقبولة", "yellow"
-    else:
-        return "🟢 قوية جداً", "green"
-
-def generate_strong_password():
-    import string
-    chars = string.ascii_letters + string.digits + "!@#$%^&*"
-    return ''.join(random.choice(chars) for _ in range(12))
-
-def check_link_safety(url):
-    # API مجاني لفحص الروابط
-    try:
-        response = requests.get(f"https://ipqualityscore.com/api/json/url/API_KEY/{url}", timeout=5)
-        return "🟢 الرابط آمن" if response.status_code == 200 else "⚠️ فحص يدوي مطلوب"
-    except:
-        return "⚠️ تعذر الفحص. تأكد من الرابط."
-
-# ========== القوائم الرئيسية ==========
-def main_menu():
-    markup = InlineKeyboardMarkup(row_width=2)
-    btn1 = InlineKeyboardButton("🛡️ فحص كلمة المرور", callback_data="check_pass")
-    btn2 = InlineKeyboardButton("🔗 فحص رابط", callback_data="check_link")
-    btn3 = InlineKeyboardButton("💪 إنشاء كلمة قوية", callback_data="gen_pass")
-    btn4 = InlineKeyboardButton("📖 نصائح أمنية", callback_data="tips")
-    btn5 = InlineKeyboardButton("⚠️ تهديدات حديثة", callback_data="threats")
-    btn6 = InlineKeyboardButton("📞 تواصل مع خبير", callback_data="contact")
-    markup.add(btn1, btn2, btn3, btn4, btn5, btn6)
-    return markup
-
-def back_button():
-    markup = InlineKeyboardMarkup()
-    markup.add(InlineKeyboardButton("🔙 رجوع للقائمة الرئيسية", callback_data="main"))
-    return markup
-
-# ========== أوامر البوت ==========
-@bot.message_handler(commands=['start'])
-def start(message):
-    bot.send_photo(message.chat.id, "https://i.imgur.com/placeholder.jpg",  # يمكنك تغيير رابط الصورة
-                   caption="🔥 **بوت الأمن السيبراني - Cyber Security Bot** 🔥\n\nاختر خدمة من القائمة أدناه:",
-                   reply_markup=main_menu())
-
-@bot.message_handler(commands=['help'])
-def help_cmd(message):
-    bot.send_message(message.chat.id, "📖 **قائمة الأوامر:**\n/start - تشغيل البوت\n/help - المساعدة\n/tip - نصيحة عشوائية\n/pass <كلمة> - فحص كلمة مرور", reply_markup=back_button())
-
-@bot.message_handler(commands=['tip'])
-def tip_cmd(message):
-    bot.send_message(message.chat.id, f"📌 **نصيحة أمنية اليوم:**\n{get_security_tip()}", reply_markup=back_button())
-
-@bot.message_handler(commands=['pass'])
-def pass_cmd(message):
-    parts = message.text.split()
-    if len(parts) > 1:
-        password = parts[1]
-        strength, color = check_password_strength(password)
-        bot.send_message(message.chat.id, f"🔐 **نتيجة فحص كلمة المرور:**\n{strength}", reply_markup=back_button())
-    else:
-        bot.send_message(message.chat.id, "⚠️ استخدم: /pass كلمة_المرور", reply_markup=back_button())
-
-# ========== معالجة الأزرار ==========
-@bot.callback_query_handler(func=lambda call: True)
-def callback_handler(call):
-    if call.data == "main":
-        bot.edit_message_caption("🔥 **بوت الأمن السيبراني** 🔥\n\nاختر خدمة من القائمة:", 
-                                 call.message.chat.id, call.message.message_id, 
-                                 reply_markup=main_menu())
+    if is_blocked(uid):
+        await update.message.reply_text("⛔ ممنوع: تجاوزت الحد المسموح. حاول بعد دقائق.")
+        return
     
-    elif call.data == "check_pass":
-        bot.edit_message_text("🔐 **فحص كلمة المرور**\n\nأرسل كلمة المرور التي تريد فحصها:", 
-                              call.message.chat.id, call.message.message_id,
-                              reply_markup=back_button())
-        bot.register_next_step_handler(call.message, check_pass_handler)
+    # كشف التصيد أولاً
+    phish = detect_phishing(text)
+    if phish:
+        warning = "\n".join(phish)
+        await update.message.reply_text(f"⚠️ تحذير أمني: محاولة تصيد محتملة!\n{warning}")
+        failed_attempts[uid] += 1
+        user_log[uid].append(f"[{now}] تصيد مكتشف")
+        if failed_attempts[uid] >= 3:
+            blocked_users[uid] = time.time() + 300
+            await update.message.reply_text("🚫 تم حظرك 5 دقائق لكثرة المحاولات الخطيرة")
+        return
     
-    elif call.data == "check_link":
-        bot.edit_message_text("🔗 **فحص رابط**\n\nأرسل الرابط لفحصه:", 
-                              call.message.chat.id, call.message.message_id,
-                              reply_markup=back_button())
-        bot.register_next_step_handler(call.message, check_link_handler)
-    
-    elif call.data == "gen_pass":
-        password = generate_strong_password()
-        bot.edit_message_text(f"💪 **كلمة مرور قوية:**\n`{password}`\n\n⚠️ حفظها في مكان آمن!", 
-                              call.message.chat.id, call.message.message_id, parse_mode='Markdown',
-                              reply_markup=back_button())
-    
-    elif call.data == "tips":
-        tip = get_security_tip()
-        bot.edit_message_text(f"📖 **نصيحة أمنية:**\n\n{tip}", 
-                              call.message.chat.id, call.message.message_id,
-                              reply_markup=back_button())
-    
-    elif call.data == "threats":
-        threats = "⚠️ **أحدث التهديدات الأمنية (2025):**\n\n1️⃣ هجمات الفدية (Ransomware) تتطور\n2️⃣ ثغرات الذكاء الاصطناعي التوليدي\n3️⃣ هجمات التصيد بالبريد الإلكتروني\n4️⃣ اختراق أجهزة إنترنت الأشياء (IoT)\n5️⃣ ثغرات التطبيقات السحابية"
-        bot.edit_message_text(threats, call.message.chat.id, call.message.message_id,
-                              reply_markup=back_button())
-    
-    elif call.data == "contact":
-        contact_msg = "📞 **للتواصل مع خبراء الأمن السيبراني:**\n\n⚠️ في حالات الطوارئ الأمنية، تواصل مع فريق الاستجابة للطوارئ الحاسوبية في بلدك.\n\n🔒 للتوعية والاستشارات:\n@CyberSecurityExpert (Telegram)"
-        bot.edit_message_text(contact_msg, call.message.chat.id, call.message.message_id,
-                              reply_markup=back_button())
+    # تحليل كلمة المرور
+    res, score, notes = password_strength(text)
+    await update.message.reply_text(f"{res}\nالنتيجة: {score}/7\n" + "\n".join(notes))
+    user_log[uid].append(f"[{now}] تحليل كلمة مرور - {res}")
+    failed_attempts[uid] = 0
 
-def check_pass_handler(message):
-    strength, _ = check_password_strength(message.text)
-    bot.send_message(message.chat.id, f"🔐 **النتيجة:**\n{strength}", reply_markup=main_menu())
+# ------------------- تشغيل البوت -------------------
+async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    await query.edit_message_text("🔐 أرسل كلمة المرور الآن (لن تُحفظ)")
 
-def check_link_handler(message):
-    result = check_link_safety(message.text)
-    bot.send_message(message.chat.id, f"🔗 **نتيجة فحص الرابط:**\n{result}", reply_markup=main_menu())
+app = Application.builder().token(TOKEN).build()
+app.add_handler(CommandHandler("start", start))
+app.add_handler(CommandHandler("log", log_command))
+app.add_handler(CommandHandler("reset", reset_log))
+app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+app.add_handler(CallbackQueryHandler(handle_callback))
 
-# ========== تشغيل البوت ==========
-def run_bot():
-    print("🛡️ بوت الأمن السيبراني شغال...")
-    bot.infinity_polling()
-
-def run_flask():
-    flask_app.run(host='0.0.0.0', port=8080)
-
-if __name__ == "__main__":
-    print("=" * 50)
-    print("🛡️ بوت الأمن السيبراني - Cyber Security Bot")
-    print("🚀 جاهز للتشغيل على 24 ساعة")
-    print("=" * 50)
-    
-    threading.Thread(target=run_flask).start()
-    run_bot()
+print("🔥 البوت الأمني يعمل بنجاح")
+app.run_polling()
