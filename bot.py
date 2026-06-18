@@ -1,102 +1,72 @@
-#!/usr/bin/env python3
-import subprocess, sys, re, time, asyncio
-from datetime import datetime
-from collections import defaultdict
+import os
+import logging
+from telegram import Update
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 
-# تثبيت تلقائي
-try:
-    from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-    from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
-except ImportError:
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "python-telegram-bot==20.7"])
-    from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-    from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
+# تفعيل نظام تسجيل الأخطاء (Logging)
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO
+)
 
-TOKEN = "8991347836:AAFjIPf0Nggic9kfto7VuCsHP3QvUiwhJ0M"
+# جلب التوكن من إعدادات المنصة (Environment Variables) لضمان الأمان، أو استخدام التوكن الخاص بك مباشرة
+TOKEN = os.getenv("TELEGRAM_TOKEN", "8759522486:AAHfUEiwijT8N2WdL9WbRCDk8gXor_Ka-IM")
 
-# بيانات الحماية
-failed = defaultdict(int)
-blocked = {}
-logs = defaultdict(list)
+# قاعدة بيانات المسلسلات (يمكنك تعديل الأسماء والروابط هنا في أي وقت)
+EGYPTIAN_SERIES = {
+    "جعفر العمدة": {
+        "story": "تدور الأحداث في إطار اجتماعي شعبي حول جعفر العمدة الذي يعيش في حي السيدة زينب ويمتلك شركات للمقاولات.",
+        "video_id": "https://t.me/c/123456789/1"  # ضع هنا رابط الحلقة أو قناتك السرية
+    },
+    "الاختيار": {
+        "story": "يتناول العمل بطولات رجال القوات المسلحة والشرطة المصرية والتضحيات التي يقدمونها.",
+        "video_id": "https://t.me/c/123456789/2"
+    },
+    "الكبير أوي": {
+        "story": "مغامرات كوميدية في قرية المزاريطة بين الكبير وجوني وحزلقوم.",
+        "video_id": "https://t.me/c/123456789/3"
+    }
+}
 
-def check_password(pwd):
-    score = 0
-    notes = []
-    if len(pwd) >= 12: score += 2
-    else: notes.append("❌ الطول أقل من 12")
-    if re.search(r'[A-Z]', pwd): score += 1
-    else: notes.append("❌ لا يحتوي على حروف كبيرة")
-    if re.search(r'[a-z]', pwd): score += 1
-    else: notes.append("❌ لا يحتوي على حروف صغيرة")
-    if re.search(r'\d', pwd): score += 1
-    else: notes.append("❌ لا يحتوي على أرقام")
-    if re.search(r'[!@#$%^&*(),.?":{}|<>]', pwd): score += 2
-    else: notes.append("❌ لا يحتوي على رموز خاصة")
-    if score >= 6: res = "✅ قوية"
-    elif score >= 4: res = "⚠️ متوسطة"
-    else: res = "🔴 ضعيفة"
-    return res, score, notes
+# أمر /start عند تشغيل البوت
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    user_name = update.effective_user.first_name
+    welcome_text = (
+        f"أهلاً بك يا {user_name} في بوت المسلسلات المصرية! 🎬\n\n"
+        "اكتب اسم المسلسل الذي تبحث عنه الآن وسأرسل لك الحلقات فوراً."
+    )
+    await update.message.reply_text(welcome_text)
 
-def detect_phishing(text):
-    keywords = ["تحديث حسابك", "تسجيل الدخول", "تأكيد", "تحقق", "كلمة المرور", "أمن"]
-    for kw in keywords:
-        if kw in text.lower():
-            return f"⚠️ تحذير: كلمة '{kw}' مشبوهة"
-    if re.search(r'https?://\S+', text):
-        return "⚠️ تحذير: رابط خارجي غير موثوق"
-    return None
+# البحث وإرسال المسلسل
+async def search_series(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    user_message = update.message.text.strip()
+    found = False
 
-async def start(update, context):
-    await update.message.reply_text("🛡️ بوت أمني\nأرسل نص أو كلمة مرور للتحليل\n/log سجل\n/reset مسح")
-
-async def log_cmd(update, context):
-    uid = update.effective_user.id
-    if not logs[uid]:
-        await update.message.reply_text("لا يوجد سجل")
-        return
-    await update.message.reply_text("\n".join(logs[uid][-10:]))
-
-async def reset_cmd(update, context):
-    logs[update.effective_user.id] = []
-    await update.message.reply_text("تم المسح")
-
-async def handle(update, context):
-    uid = update.effective_user.id
-    if uid in blocked and time.time() < blocked[uid]:
-        await update.message.reply_text("⛔ محظور مؤقتاً")
-        return
-    elif uid in blocked:
-        del blocked[uid]
+    for series_name, data in EGYPTIAN_SERIES.items():
+        if user_message.lower() in series_name.lower():
+            response_text = (
+                f"🎬 **المسلسل:** {series_name}\n\n"
+                f"📝 **القصة:** {data['story']}\n\n"
+                f"👇 **اضغط على الرابط لمشاهدة وتحميل الحلقات:**\n{data['video_id']}"
+            )
+            await update.message.reply_text(response_text, parse_mode="Markdown")
+            found = True
+            break
     
-    text = update.message.text
-    now = datetime.now().strftime("%H:%M:%S")
-    
-    # فحص التصيد
-    phish = detect_phishing(text)
-    if phish:
-        await update.message.reply_text(phish)
-        failed[uid] += 1
-        logs[uid].append(f"[{now}] تصيد")
-        if failed[uid] >= 3:
-            blocked[uid] = time.time() + 300
-            await update.message.reply_text("🚫 حظر 5 دقائق")
-        return
-    
-    # تحليل كلمة المرور
-    res, score, notes = check_password(text)
-    notes_str = "\n".join(notes) if notes else "جميع المعايير جيدة"
-    await update.message.reply_text(f"{res} ({score}/7)\n{notes_str}")
-    logs[uid].append(f"[{now}] {res}")
-    failed[uid] = 0
+    if not found:
+        await update.message.reply_text(
+            "عذراً، لم أجد هذا المسلسل حالياً. جاري إضافته قريباً! 🍿"
+        )
 
-async def main():
-    app = Application.builder().token(TOKEN).build()
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("log", log_cmd))
-    app.add_handler(CommandHandler("reset", reset_cmd))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle))
-    print("✅ البوت شغال - توكل على الله")
-    await app.run_polling()
+def main():
+    # بناء التطبيق وتشغيله
+    application = Application.builder().token(TOKEN).build()
 
-if __name__ == "__main__":
-    asyncio.run(main())
+    # الأوامر والمستمعين
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, search_series))
+
+    print("البوت يعمل الآن بنجاح...")
+    application.run_polling()
+
+if __name__ == '__main__':
+    main()
