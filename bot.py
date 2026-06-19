@@ -12,12 +12,12 @@ logging.basicConfig(
 TOKEN = "8759522486:AAHfUEiwijT8N2WdL9WbRCDk8gXor_Ka-IM"
 
 # قاعدة بيانات المسلسلات والأفلام الاحترافية
-# ملاحظة: استبدل الروابط الافتراضية بروابط قنواتك الحقيقية لكي تفتح مع المشتركين بدون مشاكل
+# استبدل الروابط الافتراضية بروابط قنواتك الحقيقية لكي تفتح مع المشتركين بدون مشاكل
 MOVIES_DATABASE = {
     "الأسطورة": {
         "aliases": ["الاسطورة", "الأسطوره", "الاسطوره", "اسطورة", "اسطوره"],
         "story": "تدور أحداث المسلسل حول ناصر، شاب خريج كلية الحقوق يسعى للتعيين في النيابة، ولكن بسبب ظروف عائلته وشقيقه رفاعي يتغير مسار حياته تماماً ويدخل في عالم تجارة السلاح والانتقام.",
-        "link": "https://t.me/c/123456789/4"  # ضع هنا رابط قناتك الحقيقي لمسلسل الأسطورة
+        "link": "https://t.me/c/123456789/4"  # ارفع حلقة الأسطورة في قناتك وضع رابطها هنا
     },
     "جعفر العمدة": {
         "aliases": ["جعفر", "العمدة", "العامده", "جعفر العمده"],
@@ -51,7 +51,7 @@ async def search_movie(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     found = False
 
     for item_name, data in MOVIES_DATABASE.items():
-        # التحقق إذا كان النص المكتوب يطابق الاسم الأساسي أو أي من الأسماء البديلة (Aliases)
+        # التحقق من المطابقة الذكية للاسم الأساسي أو الأسماء البديلة
         if user_message in item_name.lower() or any(alias in user_message for alias in data["aliases"]):
             response_text = (
                 f"🎬 **المسلسل:** {item_name}\n\n"
@@ -65,4 +65,16 @@ async def search_movie(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     
     if not found:
         await update.message.reply_text(
-            "عذراً،
+            "عذراً، لم يتم العثور على هذا المسلسل حالياً. جاري رفعه وإضافته قريباً! 🔥🍿"
+        )
+
+def main():
+    application = Application.builder().token(TOKEN).build()
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, search_movie))
+
+    print("البوت الاحترافي لـ (قصي) يعمل الآن بنجاح...")
+    application.run_polling()
+
+if __name__ == '__main__':
+    main()
