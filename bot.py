@@ -11,27 +11,26 @@ logging.basicConfig(
 # التوكن الخاص بك
 TOKEN = "8759522486:AAHfUEiwijT8N2WdL9WbRCDk8gXor_Ka-IM"
 
-# قاعدة بيانات المسلسلات والأفلام بالأزرار والحلقات
-# تنبيه: استبدل الروابط الافتراضية (مثل https://t.me/...) بروابط الحلقات الحقيقية من قناتك لكي تفتح مع الناس
+# قاعدة بيانات المسلسلات
+# تذكر: يجب ملء أكواد الفيديوهات (File ID) الحقيقية لكل حلقة لكي يرسلها البوت مباشرة
 MOVIES_DATABASE = {
     "الأسطورة": {
         "aliases": ["الاسطورة", "الأسطوره", "الاسطوره", "اسطورة", "اسطوره"],
         "story": "تدور أحداث المسلسل حول ناصر، شاب خريج كلية الحقوق يسعى للتعيين في النيابة، ولكن بسبب ظروف شقيقه رفاعي يتغير مسار حياته تماماً ويدخل في عالم تجارة السلاح والانتقام.",
         "episodes": {
-            "الحلقة 1": "https://t.me/c/123456789/1",  # ضع رابط الحلقة 1 الحقيقي هنا
-            "الحلقة 2": "https://t.me/c/123456789/2",  # ضع رابط الحلقة 2 الحقيقي هنا
-            "الحلقة 3": "https://t.me/c/123456789/3",  # ضع رابط الحلقة 3 الحقيقي هنا
-            "الحلقة 4": "https://t.me/c/123456789/4",  # ضع رابط الحلقة 4 الحقيقي هنا
-            "الحلقة 5": "https://t.me/c/123456789/5",  # ضع رابط الحلقة 5 الحقيقي هنا
+            # ضع هنا الـ File ID الخاص بكل حلقة بدلاً من الأكواد التجريبية بالأسفل:
+            "1": "AgACAgQAAx0C...", 
+            "2": "AgACAgQAAx0C...",
+            "3": "AgACAgQAAx0C...",
+            # يمكنك إكمال بقية الحلقات حتى 30 بنفس الطريقة هنا...
         }
     },
     "جعفر العمدة": {
         "aliases": ["جعفر", "العمدة", "العامده", "جعفر العمده"],
-        "story": "تدور الأحداث في إطار اجتماعي شعبي حول جعفر العمدة الذي يعيش في حي السيدة زينب ويمتلك شركات للمقاولات ويبحث عن ابنه المفقود منذ 19 عاماً.",
+        "story": "تدور الأحداث في إطار اجتماعي شعبية حول جعفر العمدة الذي يعيش في حي السيدة زينب ويبحث عن ابنه المفقود منذ سنوات.",
         "episodes": {
-            "الحلقة 1": "https://t.me/c/123456789/6",
-            "الحلقة 2": "https://t.me/c/123456789/7",
-            "الحلقة 3": "https://t.me/c/123456789/8",
+            "1": "AgACAgQAAx0C...",
+            "2": "AgACAgQAAx0C...",
         }
     }
 }
@@ -45,7 +44,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     )
     await update.message.reply_text(welcome_text)
 
-# البحث وعرض الحلقات على شكل أزرار
+# البحث وعرض الأزرار لـ 30 حلقة بشكل تلقائي ومنظم
 async def search_movie(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_message = update.message.text.strip().lower()
     found_series = None
@@ -58,15 +57,16 @@ async def search_movie(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             break
     
     if found_series:
-        # إنشاء الأزرار التفاعلية للحلقات
         keyboard = []
-        # ترتيب الأزرار لكي تظهر بشكل منظم (كل زرين بجانب بعضهما)
         row = []
-        for ep_name in found_series["episodes"].keys():
-            # نرسل اسم المسلسل واسم الحلقة داخل الـ callback_data ليعرف البوت ماذا اختار المستخدم
-            callback_data = f"ep|{actual_name}|{ep_name}"
-            row.append(InlineKeyboardButton(ep_name, callback_data=callback_data))
-            if len(row) == 2:
+        
+        # إنشاء 30 زر تلقائياً وبشكل منظم جداً (كل سطر يحتوي على 5 أزرار لتناسب شاشة الآيفون)
+        for i in range(1, 31):
+            ep_num = str(i)
+            callback_data = f"ep|{actual_name}|{ep_num}"
+            row.append(InlineKeyboardButton(f"حلقة {ep_num}", callback_data=callback_data))
+            
+            if len(row) == 5:
                 keyboard.append(row)
                 row = []
         if row:
@@ -77,7 +77,7 @@ async def search_movie(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         response_text = (
             f"🎬 **المسلسل:** {actual_name}\n\n"
             f"📝 **القصة:** {found_series['story']}\n\n"
-            f"👇 **اختر الحلقة التي تريد مشاهدتها من الأزرار بالأسفل:**"
+            f"👇 **اختر رقم الحلقة التي تريد مشاهدتها وسيتم إرسال الفيديو لك مباشرة هنا:**"
         )
         await update.message.reply_text(response_text, reply_markup=reply_markup, parse_mode="Markdown")
     else:
@@ -85,37 +85,42 @@ async def search_movie(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             "عذراً، لم يتم العثور على هذا المسلسل حالياً. جاري رفعه وإضافته قريباً! 🔥🍿"
         )
 
-# معالجة الضغط على أزرار الحلقات
+# معالجة الضغط على زر الحلقة وإرسال الفيديو مباشرة
 async def handle_episode_choice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
-    await query.answer() # تنبيه التليجرام أن الضغطة تمت
+    await query.answer()
     
     data_parts = query.data.split("|")
     if data_parts[0] == "ep":
         series_name = data_parts[1]
-        episode_name = data_parts[2]
+        episode_num = data_parts[2]
         
-        # جلب رابط الحلقة من قاعدة البيانات
-        if series_name in MOVIES_DATABASE and episode_name in MOVIES_DATABASE[series_name]["episodes"]:
-            ep_link = MOVIES_DATABASE[series_name]["episodes"][episode_name]
+        if series_name in MOVIES_DATABASE and episode_num in MOVIES_DATABASE[series_name]["episodes"]:
+            video_file_id = MOVIES_DATABASE[series_name]["episodes"][episode_num]
             
-            reply_text = (
-                f"🍿 **مسلسل:** {series_name}\n"
-                f"📌 **{episode_name} جاهزة الآن للمشاهدة!**\n\n"
-                f"🔗 [اضغط هنا لمشاهدة الحلقة مباشرة]({ep_link})\n\n"
-                "🛡️ _الحقوق محفوظة لـ قصي_"
-            )
-            await query.message.reply_text(reply_text, parse_mode="Markdown", disable_web_page_preview=False)
+            # إرسال رسالة انتظار سريعة للمستخدم
+            loading_msg = await query.message.reply_text(f"⏳ جاري تحميل وإرسال الحلقة {episode_num} مباشرة، يرجى الانتظار ثواني...")
+            
+            try:
+                # إرسال الفيديو مباشرة باستخدام الـ File ID
+                await query.message.reply_video(
+                    video=video_file_id,
+                    caption=f"🍿 مسلسل: {series_name} - الحلقة {episode_num}\n\n🛡️ _الحقوق محفوظة لـ قصي_"
+                )
+                # حذف رسالة الانتظار بعد إرسال الفيديو بنجاح
+                await loading_msg.delete()
+            except Exception as e:
+                # إذا كان الكود تجريبياً أو غير صحيح، سيظهر تنبيه
+                await loading_msg.edit_text("❌ عذراً، لم يتم العثور على ملف الفيديو الحقيقي لهذه الحلقة في الخادم حالياً.")
 
 def main():
     application = Application.builder().token(TOKEN).build()
 
     application.add_handler(CommandHandler("start", start))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, search_movie))
-    # مستمع خاص بالضغط على الأزرار
     application.add_handler(CallbackQueryHandler(handle_episode_choice))
 
-    print("البوت الاحترافي المطور بالأزرار لـ (قصي) يعمل الآن...")
+    print("البوت الاحترافي الشامل (30 حلقة فيديو مباشر) لـ (قصي) يعمل...")
     application.run_polling()
 
 if __name__ == '__main__':
