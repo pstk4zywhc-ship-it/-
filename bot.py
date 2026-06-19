@@ -3,66 +3,66 @@ import logging
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 
-# تفعيل نظام تسجيل الأخطاء
+# تفعيل نظام تسجيل الأخطاء (Logging)
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO
 )
 
-# التوكن الخاص بك مباشرة
+# التوكن الخاص بك
 TOKEN = "8759522486:AAHfUEiwijT8N2WdL9WbRCDk8gXor_Ka-IM"
 
-# قاعدة بيانات المسلسلات كاملة
-EGYPTIAN_SERIES = {
+# قاعدة بيانات المسلسلات والأفلام الاحترافية
+# ملاحظة: استبدل الروابط الافتراضية بروابط قنواتك الحقيقية لكي تفتح مع المشتركين بدون مشاكل
+MOVIES_DATABASE = {
     "الأسطورة": {
-        "story": "تدور أحداث المسلسل حول ناصر، شاب خريج كلية الحقوق يسعى للانضمام للسلك القضائي، ولكن بسبب ظروف شقيقه رفاعي يتغير مسار حياته تماماً ويدخل في عالم تجارة السلاح.",
-        "video_id": "رابط_قناتك_أو_حلقات_الأسطورة_هنا"  # ضع رابط القناة الحقيقي هنا لتفادي رسالة الخطأ
+        "aliases": ["الاسطورة", "الأسطوره", "الاسطوره", "اسطورة", "اسطوره"],
+        "story": "تدور أحداث المسلسل حول ناصر، شاب خريج كلية الحقوق يسعى للتعيين في النيابة، ولكن بسبب ظروف عائلته وشقيقه رفاعي يتغير مسار حياته تماماً ويدخل في عالم تجارة السلاح والانتقام.",
+        "link": "https://t.me/c/123456789/4"  # ضع هنا رابط قناتك الحقيقي لمسلسل الأسطورة
     },
     "جعفر العمدة": {
-        "story": "تدور الأحداث في إطار اجتماعي شعبي حول جعفر العمدة الذي يعيش في حي السيدة زينب ويمتلك شركات للمقاولات ويبحث عن ابنه المفقود منذ سنوات.",
-        "video_id": "رابط_قناتك_أو_حلقات_جعفر_هنا"      # ضع رابط القناة الحقيقي هنا لتفادي رسالة الخطأ
+        "aliases": ["جعفر", "العمدة", "العامده", "جعفر العمده"],
+        "story": "تدور الأحداث في إطار اجتماعي شعبي حول جعفر العمدة الذي يعيش في حي السيدة زينب ويمتلك شركات للمقاولات ويبحث عن ابنه المفقود منذ 19 عاماً.",
+        "link": "https://t.me/c/123456789/1"   # ضع هنا رابط قناتك الحقيقي لجعفر العمدة
     },
     "الاختيار": {
-        "story": "يتناول العمل بطولات رجال القوات المسلحة والشرطة المصرية والتضحيات التي يقدمونها لحماية الوطن.",
-        "video_id": "رابط_قناة_الاختيار_هنا"
+        "aliases": ["اختيار", "الاختيار 1", "الاختيار 2"],
+        "story": "يتناول العمل بطولات رجال القوات المسلحة والشرطة المصرية والتضحيات الكبيرة التي يقدمونها لحماية الوطن.",
+        "link": "https://t.me/c/123456789/2"
     },
     "الكبير أوي": {
-        "story": "مغامرات كوميدية في قرية المزاريطة بين الكبير وجوني وحزلقوم ومواقفهم الطريفة.",
-        "video_id": "رابط_قناة_الكبير_هنا"
+        "aliases": ["الكبير", "جوني", "حزلقوم", "المزاريطة"],
+        "story": "مغامرات كوميدية في قرية المزاريطة بين الكبير وجوني وحزلقوم ومواقفهم الطريفة مع أهل القرية.",
+        "link": "https://t.me/c/123456789/3"
     }
 }
 
+# أمر /start بالمقدمة الجديدة الاحترافية
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    user_name = update.effective_user.first_name
     welcome_text = (
-        f"أهلاً بك يا {user_name} في بوت المسلسلات العربية والمصرية! 🎬\n\n"
-        "اكتب اسم المسلسل الذي تبحث عنه الآن وسأرسل لك الحلقات فوراً."
+        "مرحبا في بوت مسلسلات وأفلام مصريه 🎬✨\n"
+        "الحقوق قصي ⚖️\n\n"
+        "اكتب الآن اسم المسلسل أو الفيلم الذي تبحث عنه، وسأرسل لك الحلقات فوراً! 🍿"
     )
     await update.message.reply_text(welcome_text)
 
-async def search_series(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    user_message = update.message.text.strip()
+# البحث الذكي عن المسلسلات
+async def search_movie(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    user_message = update.message.text.strip().lower()
     found = False
 
-    for series_name, data in EGYPTIAN_SERIES.items():
-        if user_message.lower() in series_name.lower():
+    for item_name, data in MOVIES_DATABASE.items():
+        # التحقق إذا كان النص المكتوب يطابق الاسم الأساسي أو أي من الأسماء البديلة (Aliases)
+        if user_message in item_name.lower() or any(alias in user_message for alias in data["aliases"]):
             response_text = (
-                f"🎬 **المسلسل:** {series_name}\n\n"
+                f"🎬 **المسلسل:** {item_name}\n\n"
                 f"📝 **القصة:** {data['story']}\n\n"
-                f"👇 **اضغط على الرابط لمشاهدة وتحميل الحلقات:**\n{data['video_id']}"
+                f"👇 **اضغط على الرابط لمشاهدة وتحميل الحلقات:**\n{data['link']}\n\n"
+                "🛡️ _الحقوق محفوظة لـ قصي_"
             )
             await update.message.reply_text(response_text, parse_mode="Markdown")
             found = True
             break
     
     if not found:
-        await update.message.reply_text("عذراً، لم أجد هذا المسلسل حالياً. جاري إضافته قريباً! 🍿")
-
-def main():
-    application = Application.builder().token(TOKEN).build()
-    application.add_handler(CommandHandler("start", start))
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, search_series))
-    print("البوت المحدث يعمل الآن...")
-    application.run_polling()
-
-if __name__ == '__main__':
-    main()
+        await update.message.reply_text(
+            "عذراً،
