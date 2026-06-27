@@ -1,5 +1,6 @@
 import os
 import logging
+import random
 import telebot
 from telebot import types
 from deep_translator import GoogleTranslator
@@ -14,35 +15,71 @@ bot = telebot.TeleBot(TOKEN)
 user_modes = {}
 user_levels = {}
 
-# قاموس بسيط لتصحيح الأخطاء الشائعة والبدائية تلقائياً لزيادة ذكاء البوت
+# قاموس لتصحيح الأخطاء الشائعة والبدائية تلقائياً لزيادة ذكاء البوت
 COMMON_CORRECTIONS = {
     "tebol": "table",
     "set in": "sat on",
     "set on": "sat on",
     "the cat set": "the cat sat",
-    "in the chair": "on the chair"
+    "in the chair": "on the chair",
+    "i is": "I am",
+    "he are": "he is",
+    "she are": "she is",
+    "they is": "they are"
 }
 
+# بنك جمل ضخم ومتنوع لكل لفل (يتم الاختيار منها عشوائياً)
 LEVELS_DATA = {
     1: {
         "title": "🌱 لفل 1 - المبتدئ الشامل",
-        "intro": "هذا المستوى للمبتدئين تماماً. سأرسل لك جملة بسيطة جداً لترجمتها وتعلمها:\n\n💬 اضغط لنسخها:\n`The cat is sleeping on the chair.`\n\n💡 تعني: القطة تنام على الكرسي. حاول كتابة جملة مشابهة لي بالإنجليزية واختبر ذكائي!"
+        "sentences": [
+            {"en": "The cat is sleeping on the chair.", "ar": "القطة تنام على الكرسي."},
+            {"en": "I drink water every morning.", "ar": "أنا أشرب الماء كل صباح."},
+            {"en": "The sun is very bright today.", "ar": "الشمس مشرقة جداً اليوم."},
+            {"en": "My brother has a beautiful car.", "ar": "أخي يمتلك سيارة جميلة."},
+            {"en": "She loves reading books in the room.", "ar": "هي تحب قراءة الكتب في الغرفة."}
+        ]
     },
     2: {
         "title": "🌿 لفل 2 - المبتدئ المتقدم",
-        "intro": "ممتاز! بدأت تدخل في تركيب الجمل اليومية. إليك جملة هذا المستوى:\n\n💬 اضغط لنسخها:\n`I want to learn English to get a good job.`\n\n💡 تعني: أريد أن أتعلم الإنجليزية لأحصل على وظيفة جيدة."
+        "intro": "ممتاز! بدأت تدخل في تركيب الجمل اليومية. إليك جملة هذا المستوى:\n\n💬 اضغط لنسخها:\n`I want to learn English to get a good job.`\n\n💡 تعني: أريد أن أتعلم الإنجليزية لأحصل على وظيفة جيدة.",
+        "sentences": [
+            {"en": "I want to learn English to get a good job.", "ar": "أريد أن أتعلم الإنجليزية لأحصل على وظيفة جيدة."},
+            {"en": "We should go to the supermarket tonight.", "ar": "ينبغي أن نذهب إلى السوبرماركت الليلة."},
+            {"en": "He does not like waiting for a long time.", "ar": "هو لا يحب الانتظار لوقت طويل."},
+            {"en": "Can you help me finish this homework?", "ar": "هل يمكنك مساعدتي في إنهاء هذا الواجب المنزلي؟"},
+            {"en": "Traveling to new places opens your mind.", "ar": "السفر إلى أماكن جديدة يفتح عقلك."}
+        ]
     },
     3: {
         "title": "🔥 لفل 3 - المتوسط",
-        "intro": "كفو! لفل 3 يتطلب فهم أعمق. إليك الجملة المخصصة:\n\n💬 اضغط لنسخها:\n`Success is not final, failure is not fatal.`\n\n💡 تعني: النجاح ليس نهائياً، والفشل ليس قاتلاً."
+        "sentences": [
+            {"en": "Success is not final, failure is not fatal.", "ar": "النجاح ليس نهائياً، والفشل ليس قاتلاً."},
+            {"en": "Education is the most powerful weapon to change the world.", "ar": "التعليم هو أقوى سلاح لتغيير العالم."},
+            {"en": "Don't count the days, make the days count.", "ar": "لا تحسب الأيام، بل اجعل الأيام ذات قيمة."},
+            {"en": "An investment in knowledge pays the best interest.", "ar": "الاستثمار في المعرفة يدفع أفضل العوائد."},
+            {"en": "Hard work beats talent when talent fails to work hard.", "ar": "العمل الجاد يهزم الموهبة عندما تفشل الموهبة في العمل بجد."}
+        ]
     },
     4: {
         "title": "🚀 لفل 4 - فوق المتوسط",
-        "intro": "مستوى عالي جداً! بدأت تتحدث بطلاقة وتستخدم مصطلحات قوية:\n\n💬 اضغط لنسخها:\n`Despite facing many obstacles, we managed to build this bot.`\n\n💡 تعني: على الرغم من مواجهة العديد من العقبات، تمكنا من بناء هذا البوت."
+        "sentences": [
+            {"en": "Despite facing many obstacles, we managed to build this bot.", "ar": "على الرغم من مواجهة العديد من العقبات، تمكنا من بناء هذا البوت."},
+            {"en": "The economic situation requires immediate and effective solutions.", "ar": "الوضع الاقتصادي يتطلب حلولاً فورية وفعالة."},
+            {"en": "Environmental awareness has become essential for our survival.", "ar": "أصبح الوعي البيئي ضرورياً لبقائنا على قيد الحياة."},
+            {"en": "Innovation distinguishes between a leader and a follower.", "ar": "الابتكار يميز بين القائد والتابع."},
+            {"en": "To achieve your goals, you must step out of your comfort zone.", "ar": "لتحقيق أهدافك، يجب عليك الخروج من منطقة الراحة الخاصة بك."}
+        ]
     },
     5: {
         "title": "👑 لفل 5 - المحترف الخبير",
-        "intro": "أنت الأسطورة هنا! لفل 5 مخصص للمقالات والترجمات المعقدة:\n\n💬 اضغط لنسخها:\n`Advanced algorithms enhance system efficiency substantially.`\n\n💡 تعني: إن خوارزميات التعلم الآلي المتقدمة تعزز كفاءة النظام بشكل كبير."
+        "sentences": [
+            {"en": "Advanced algorithms enhance system efficiency substantially.", "ar": "إن خوارزميات التعلم الآلي المتقدمة تعزز كفاءة النظام بشكل كبير."},
+            {"en": "The juxtaposition of technology and art creates profound human experiences.", "ar": "إن التجاوز بين التكنولوجيا والفن يخلق تجارب إنسانية عميقة."},
+            {"en": "Artificial intelligence possesses the potential to revolutionize global industries.", "ar": "يمتلك الذكاء الاصطناعي القدرة على إحداث ثورة في الصناعات العالمية."},
+            {"en": "Comprehensive research is vital to understanding socioeconomic disparities.", "ar": "البحث الشامل أمر حيوي لفهم التفاوتات الاجتماعية والاقتصادية."},
+            {"en": "The legal implications of this decision will reverberate for decades.", "ar": "إن التداعيات القانونية لهذا القرار سوف يتردد صداها لعقود من الزمن."}
+        ]
     }
 }
 
@@ -108,7 +145,18 @@ def callback_inline(call):
         lvl_num = int(call.data.split("_")[2])
         user_levels[chat_id] = lvl_num
         user_modes[chat_id] = f'learning_lvl_{lvl_num}'
-        bot.send_message(chat_id, f"🎯 **تم تحديد مستواك في:**\n{LEVELS_DATA[lvl_num]['title']}\n\n{LEVELS_DATA[lvl_num]['intro']}", parse_mode="Markdown")
+        
+        # اختيار جملة عشوائية تماماً من بنك الجمل للمستوى المحدد
+        random_sentence = random.choice(LEVELS_DATA[lvl_num]["sentences"])
+        
+        response = (
+            f"🎯 **تم تحديد مستواك بنجاح في:**\n{LEVELS_DATA[lvl_num]['title']}\n\n"
+            f"📥 **إليك جملة عشوائية مخصصة لتتعلمها الآن:**\n"
+            f"💬 اضغط لنسخ الجملة الإنجليزية لتدرب عليها:\n`{random_sentence['en']}`\n\n"
+            f"💡 **تعني بالعربية:** `{random_sentence['ar']}`\n\n"
+            f"👇 **دورك الآن:** أرسل أي جملة باللغة الإنجليزية في هذا اللفل لاختبارها وتصحيحها ذكياً!"
+        )
+        bot.send_message(chat_id, response, parse_mode="Markdown")
     elif call.data == "back_to_main":
         bot.send_message(chat_id, "🔄 تم الرجوع للواجهة الرئيسية لقصي:", reply_markup=get_main_keyboard())
     bot.answer_callback_query(call.id)
@@ -147,19 +195,16 @@ def handle_all_messages(message):
             current_lvl = int(current_mode.split("_")[2])
             text_lower = user_text.lower()
             
-            # فحص ذكي: هل توجد أخطاء في النص المرسل؟
             has_errors = False
             corrected_text = user_text
             feedback = "✨ **التقييم:** كفو! جملتك ممتازة وخالية من الأخطاء الإملائية والتركيبية في هذا اللفل. استمر! 🚀"
             
-            # مطابقة النص مع القاموس الذكي للأخطاء
             for wrong, right in COMMON_CORRECTIONS.items():
                 if wrong in text_lower:
                     has_errors = True
                     corrected_text = text_lower.replace(wrong, right)
                     break
             
-            # إذا كتب كلمات عشوائية غير مفهومة أو أحرف خاطئة
             if has_errors or ("tebol" in text_lower) or ("set in" in text_lower):
                 translated_correct = GoogleTranslator(source='en', target='ar').translate(corrected_text)
                 response = (
@@ -168,10 +213,9 @@ def handle_all_messages(message):
                     f"✅ **التصحيح الصحيح للجملة:**\n`{corrected_text}`\n\n"
                     f"🇵🇸 **الترجمة الصحيحة والمنسقة:**\n`{translated_correct}`\n\n"
                     f"⚠️ **تنبيه المطور قصي التعليمي:**\n"
-                    f"لقد قمت بكتابة بعض الكلمات بشكل خاطئ قواعدياً أو إملائياً (مثل استخدام تعبير خاطئ)، يرجى مراجعة الجملة المصححة بالأعلى والضغط عليها لنسخها وحفظها! 🧠"
+                    f"لقد قمت بكتابة بعض الكلمات بشكل خاطئ قواعدياً أو إملائياً، يرجى مراجعة الجملة المصححة بالأعلى والضغط عليها لنسخها وحفظها! 🧠"
                 )
             else:
-                # إذا كانت الجملة سليمة وصحيحة
                 translated = GoogleTranslator(source='en', target='ar').translate(user_text)
                 response = (
                     f"📊 **تحليل ذكي لـ [ لفل {current_lvl} ]:**\n\n"
