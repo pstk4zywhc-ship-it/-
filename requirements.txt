@@ -1,2 +1,2 @@
-python-telegram-bot==20.8
+pyTelegramBotAPI==4.26.0
 deep-translator==1.11.4
