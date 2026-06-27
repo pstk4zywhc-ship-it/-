@@ -1,20 +1,20 @@
 import os
 import logging
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, BotCommand
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, CallbackQueryHandler
-
-# مكتبة الترجمة الذكية للجمل والكلمات
+import telebot
+from telebot import types
 from deep_translator import GoogleTranslator
 
-# تفعيل نظام تسجيل الأخطاء (Logging)
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO
-)
+# تفعيل تسجيل الأخطاء
+logging.basicConfig(level=logging.INFO)
 
 # التوكن الخاص بك
 TOKEN = "8759522486:AAHfUEiwijT8N2WdL9WbRCDk8gXor_Ka-IM"
+bot = telebot.TeleBot(TOKEN)
 
-# قاعدة بيانات مخصصة للكلمات الشائعة في وضع المعلم الذكي لتعطي نطقاً تقريبياً وعينة
+# تخزين وضع المستخدم (الافتراضي: المعلم الذكي)
+user_modes = {}
+
+# قاعدة بيانات الكلمات الشائعة للمعلم الذكي
 SMART_DICTIONARY = {
     "hello": {"pron": "هَلُوو 🗣️", "ex_en": "Hello! How are you today? 🤔", "ex_ar": "مرحباً! كيف حالك اليوم؟"},
     "same": {"pron": "سِيوْم 🗣️", "ex_en": "We have the same opinion. 🤝", "ex_ar": "لدينا نفس الرأي."},
@@ -25,15 +25,25 @@ SMART_DICTIONARY = {
     "potato": {"pron": "بُوتِيتُو 🗣️", "ex_en": "I love eating fried potatoes! 🍟", "ex_ar": "أنا أحب أكل البطاطا المقلية!"}
 }
 
-# أمر /start يرسل النص والأزرار
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    context.user_data['mode'] = 'smart_teacher'
+# إنشاء الأزرار متوافقة مع شاشة الآيفون
+def get_main_keyboard():
+    keyboard = types.InlineKeyboardMarkup(row_width=1)
+    btn1 = types.InlineKeyboardButton("🇺🇸 ➡️ 🇵🇸 English to Arabic", callback_data="mode_en_to_ar")
+    btn2 = types.InlineKeyboardButton("🇵🇸 ➡️ 🇺🇸 Arabic to English", callback_data="mode_ar_to_en")
+    btn3 = types.InlineKeyboardButton("🧠 Smart Teacher | المعلم الذكي", callback_data="mode_smart")
+    keyboard.add(btn1, btn2, btn3)
+    return keyboard
+
+# أمر /start
+@bot.message_handler(commands=['start'])
+def send_welcome(message):
+    user_modes[message.chat.id] = 'smart_teacher'
     
-    # إعداد زر القائمة الأزرق (Menu) بشكل آمن تلقائياً عند أول ضغطة للمستخدم
+    # إعداد زر القائمة الأزرق (Menu) أسفل الشاشة بشكل تلقائي ومضمون
     try:
-        await context.bot.set_my_commands([BotCommand("start", "🔄 فتح الواجهة الرئيسية والاختيارات")])
+        bot.set_my_commands([types.BotCommand("start", "🔄 الواجهة الرئيسية والاختيارات")])
     except Exception as e:
-        logging.error(f"Error setting commands: {e}")
+        pass
 
     welcome_text = (
         "✨ **مرحباً بك في بوت الترجمة الاحترافي الخارق** ✨\n"
@@ -41,55 +51,48 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         "🤖 **الوضع الحالي:** 🧠 _المعلم الذكي (نطق + أمثلة)_\n\n"
         "👇 **اختر نظام تشغيل البوت الذي تريده من الأزرار بالأسفل:**"
     )
-    
-    keyboard = [
-        [InlineKeyboardButton("🇺🇸 ➡️ 🇵🇸 English to Arabic", callback_data="mode_en_to_ar")],
-        [InlineKeyboardButton("🇵🇸 ➡️ 🇺🇸 Arabic to English", callback_data="mode_ar_to_en")],
-        [InlineKeyboardButton("🧠 Smart Teacher | المعلم الذكي", callback_data="mode_smart")]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    
-    await update.message.reply_text(text=welcome_text, reply_markup=reply_markup, parse_mode="Markdown")
+    bot.send_message(message.chat.id, welcome_text, reply_markup=get_main_keyboard(), parse_mode="Markdown")
 
-# معالجة الضغط على أزرار الخيارات وتغيير وضع البوت
-async def handle_mode_switch(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    query = update.callback_query
-    await query.answer()
-    
-    if query.data == "mode_en_to_ar":
-        context.user_data['mode'] = 'en_to_ar'
-        await query.message.reply_text("🔄 **تم تفعيل الوضع:** [ إنجليزي ⬅️ عربي 🇵🇸 ]\n📥 أرسل لي أي كلمة أو جملة بالإنجليزية وسأترجمها فوراً!")
-    
-    elif query.data == "mode_ar_to_en":
-        context.user_data['mode'] = 'ar_to_en'
-        await query.message.reply_text("🔄 **تم تفعيل الوضع:** [ عربي 🇵🇸 ⬅️ إنجليزي ]\n📥 أرسل لي أي كلمة أو جملة بالعربية وسأترجمها فوراً!")
-        
-    elif query.data == "mode_smart":
-        context.user_data['mode'] = 'smart_teacher'
-        await query.message.reply_text("🧠 **تم تفعيل الوضع:** [ المعلم الذكي ]\n📥 أرسل الكلمة الإنجليزية لترى النطق بالعربي والأمثلة الكاملة!")
+# معالجة ضغطات الأزرار واختيار الوضع
+@bot.callback_query_handler(func=lambda call: True)
+def callback_inline(call):
+    if call.data == "mode_en_to_ar":
+        user_modes[call.message.chat.id] = 'en_to_ar'
+        bot.send_message(call.message.chat.id, "🔄 **تم تفعيل الوضع:** [ إنجليزي ⬅️ عربي 🇵🇸 ]\n📥 أرسل لي أي كلمة أو جملة بالإنجليزية وسأترجمها فوراً!")
+    elif call.data == "mode_ar_to_en":
+        user_modes[call.message.chat.id] = 'ar_to_en'
+        bot.send_message(call.message.chat.id, "🔄 **تم تفعيل الوضع:** [ عربي 🇵🇸 ⬅️ إنجليزي ]\n📥 أرسل لي أي كلمة أو جملة بالعربية وسأترجمها فوراً!")
+    elif call.data == "mode_smart":
+        user_modes[call.message.chat.id] = 'smart_teacher'
+        bot.send_message(call.message.chat.id, "🧠 **تم تفعيل الوضع:** [ المعلم الذكي ]\n📥 أرسل الكلمة الإنجليزية لترى النطق بالعربي والأمثلة الكاملة!")
+    bot.answer_callback_query(call.id)
 
-# معالجة الرسائل وترجمتها ديناميكياً (كلمات وجمل)
-async def handle_messages(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    user_text = update.message.text.strip()
-    current_mode = context.user_data.get('mode', 'smart_teacher')
+# استقبال الرسائل (كلمات وجمل) وترجمتها فوراً
+@bot.message_handler(func=lambda message: True)
+def handle_all_messages(message):
+    user_text = message.text.strip()
+    chat_id = message.chat.id
+    current_mode = user_modes.get(chat_id, 'smart_teacher')
     
-    waiting_msg = await update.message.reply_text("⏳ جاري الترجمة الاحترافية...")
+    # إرسال رسالة انتظار سريعة
+    waiting_msg = bot.send_message(chat_id, "⏳ جاري الترجمة الاحترافية...")
     
     try:
-        # 1️⃣ خيار: إنجليزي إلى عربي (يدعم جمل وكلمات)
+        # 1️⃣ خيار: إنجليزي إلى عربي (جمل وكلمات)
         if current_mode == 'en_to_ar':
             translated = GoogleTranslator(source='en', target='ar').translate(user_text)
             res = f"🇺🇸 **النص الأصلي:**\n`{user_text}`\n\n🇵🇸 **الترجمة المباشرة:**\n*{translated}*"
-            await waiting_msg.edit_text(res, parse_mode="Markdown")
+            bot.edit_message_text(res, chat_id, waiting_msg.message_id, parse_mode="Markdown")
 
-        # 2️⃣ خيار: عربي إلى إنجليزي (يدعم جمل وكلمات)
+        # 2️⃣ خيار: عربي إلى إنجليزي (جمل وكلمات)
         elif current_mode == 'ar_to_en':
             translated = GoogleTranslator(source='ar', target='en').translate(user_text)
             res = f"🇵🇸 **النص الأصلي:**\n`{user_text}`\n\n🇺🇸 **الترجمة المباشرة:**\n*{translated}*"
-            await waiting_msg.edit_text(res, parse_mode="Markdown")
+            bot.edit_message_text(res, chat_id, waiting_msg.message_id, parse_mode="Markdown")
 
-        # 3️⃣ خيار: المعلم الذكي (للكلمات والجمل)
+        # 3️⃣ خيار: المعلم الذكي
         elif current_mode == 'smart_teacher':
+            # إذا كان المدخل كلمة واحدة بدون مسافات
             if " " not in user_text:
                 word_clean = user_text.lower()
                 translated = GoogleTranslator(source='en', target='ar').translate(user_text)
@@ -115,6 +118,7 @@ async def handle_messages(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                     f"💡 _نصيحة المطور قصي:_ استمر في إرسال الكلمات لتقوية لغتك! ✨"
                 )
             else:
+                # إذا كانت جملة كاملة
                 translated = GoogleTranslator(source='en', target='ar').translate(user_text)
                 response = (
                     f"📝 **تحليل الجملة الذكي:**\n\n"
@@ -122,22 +126,12 @@ async def handle_messages(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                     f"🇵🇸 **ترجمتها الكاملة:** *{translated}*\n\n"
                     f"💡 _نصيحة المطور قصي:_ حاول تفكيك الجملة لحفظ الكلمات الفردية! 🚀"
                 )
-            await waiting_msg.edit_text(response, parse_mode="Markdown")
+            bot.edit_message_text(response, chat_id, waiting_msg.message_id, parse_mode="Markdown")
             
     except Exception as e:
-        logging.error(f"Error during translation: {e}")
-        await waiting_msg.edit_text("❌ عذراً، حدث خطأ أثناء الترجمة. حاول مجدداً بعد ثوانٍ!")
+        bot.edit_message_text("❌ عذراً، حدث خطأ أثناء الترجمة. حاول مجدداً!", chat_id, waiting_msg.message_id)
 
-def main():
-    # بناء التطبيق بالطريقة المتوافقة والمضمونة للسيرفر لحل مشكلة الكراش
-    application = Application.builder().token(TOKEN).build()
-    
-    application.add_handler(CommandHandler("start", start))
-    application.add_handler(CallbackQueryHandler(handle_mode_switch))
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_messages))
-
-    print("تم إصلاح الخطأ والبوت يعمل الآن بنجاح على السيرفر...")
-    application.run_polling()
-
+# تشغيل البوت
 if __name__ == '__main__':
-    main()
+    print("البوت الجديد والآمن يعمل بنجاح وبدون أي كراش...")
+    bot.infinity_polling()
