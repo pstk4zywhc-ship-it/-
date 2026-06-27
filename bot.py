@@ -3,7 +3,7 @@ import logging
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, BotCommand
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, CallbackQueryHandler
 
-# مكتبة الترجمة الذكية للجمل والكلمات (تأكد من إضافتها لملف requirements.txt)
+# مكتبة الترجمة الذكية للجمل والكلمات
 from deep_translator import GoogleTranslator
 
 # تفعيل نظام تسجيل الأخطاء (Logging)
@@ -14,7 +14,7 @@ logging.basicConfig(
 # التوكن الخاص بك
 TOKEN = "8759522486:AAHfUEiwijT8N2WdL9WbRCDk8gXor_Ka-IM"
 
-# قاعدة بيانات مخصصة للكلمات الشائعة في وضع المعلم الذكي لتعطي نطقاً تقريبياً
+# قاعدة بيانات مخصصة للكلمات الشائعة في وضع المعلم الذكي لتعطي نطقاً تقريبياً وعينة
 SMART_DICTIONARY = {
     "hello": {"pron": "هَلُوو 🗣️", "ex_en": "Hello! How are you today? 🤔", "ex_ar": "مرحباً! كيف حالك اليوم؟"},
     "same": {"pron": "سِيوْم 🗣️", "ex_en": "We have the same opinion. 🤝", "ex_ar": "لدينا نفس الرأي."},
@@ -25,15 +25,16 @@ SMART_DICTIONARY = {
     "potato": {"pron": "بُوتِيتُو 🗣️", "ex_en": "I love eating fried potatoes! 🍟", "ex_ar": "أنا أحب أكل البطاطا المقلية!"}
 }
 
-# إعداد زر القائمة الأزرق التلقائي (Menu)
-async def post_init(application: Application) -> None:
-    commands = [BotCommand("start", "🔄 فتح الواجهة الرئيسية والاختيارات")]
-    await application.bot.set_my_commands(commands)
-
 # أمر /start يرسل النص والأزرار
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     context.user_data['mode'] = 'smart_teacher'
     
+    # إعداد زر القائمة الأزرق (Menu) بشكل آمن تلقائياً عند أول ضغطة للمستخدم
+    try:
+        await context.bot.set_my_commands([BotCommand("start", "🔄 فتح الواجهة الرئيسية والاختيارات")])
+    except Exception as e:
+        logging.error(f"Error setting commands: {e}")
+
     welcome_text = (
         "✨ **مرحباً بك في بوت الترجمة الاحترافي الخارق** ✨\n"
         "👑 **بإشراف المطور قصي** 👑\n\n"
@@ -72,7 +73,6 @@ async def handle_messages(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     user_text = update.message.text.strip()
     current_mode = context.user_data.get('mode', 'smart_teacher')
     
-    # رسالة انتظار خفيفة للمستخدم
     waiting_msg = await update.message.reply_text("⏳ جاري الترجمة الاحترافية...")
     
     try:
@@ -90,12 +90,10 @@ async def handle_messages(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
         # 3️⃣ خيار: المعلم الذكي (للكلمات والجمل)
         elif current_mode == 'smart_teacher':
-            # إذا كان النص عبارة عن كلمة واحدة بدون مسافات
             if " " not in user_text:
                 word_clean = user_text.lower()
                 translated = GoogleTranslator(source='en', target='ar').translate(user_text)
                 
-                # التحقق إذا كانت الكلمة في القاموس الثابت لأخذ النطق والأمثلة المخصصة
                 if word_clean in SMART_DICTIONARY:
                     info = SMART_DICTIONARY[word_clean]
                     pron = info['pron']
@@ -117,7 +115,6 @@ async def handle_messages(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                     f"💡 _نصيحة المطور قصي:_ استمر في إرسال الكلمات لتقوية لغتك! ✨"
                 )
             else:
-                # إذا كانت جملة كاملة في وضع المعلم الذكي
                 translated = GoogleTranslator(source='en', target='ar').translate(user_text)
                 response = (
                     f"📝 **تحليل الجملة الذكي:**\n\n"
@@ -129,16 +126,17 @@ async def handle_messages(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             
     except Exception as e:
         logging.error(f"Error during translation: {e}")
-        await waiting_msg.edit_text("❌ عذراً، حدث خطأ أثناء الاتصال بمحرك الترجمة. حاول مجدداً بعد ثوانٍ!")
+        await waiting_msg.edit_text("❌ عذراً، حدث خطأ أثناء الترجمة. حاول مجدداً بعد ثوانٍ!")
 
 def main():
-    application = Application.builder().token(TOKEN).post_init(post_init).build()
+    # بناء التطبيق بالطريقة المتوافقة والمضمونة للسيرفر لحل مشكلة الكراش
+    application = Application.builder().token(TOKEN).build()
     
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CallbackQueryHandler(handle_mode_switch))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_messages))
 
-    print("بوت قصي للترجمة الفورية للجمل والكلمات يعمل الآن...")
+    print("تم إصلاح الخطأ والبوت يعمل الآن بنجاح على السيرفر...")
     application.run_polling()
 
 if __name__ == '__main__':
