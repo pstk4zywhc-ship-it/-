@@ -12,142 +12,145 @@ logging.basicConfig(
 # التوكن الخاص بك
 TOKEN = "8759522486:AAHfUEiwijT8N2WdL9WbRCDk8gXor_Ka-IM"
 
-# قاعدة بيانات الكلمات الشائعة واليومية المثبتة يدوياً لضمان نطق دقيق 100%
+# رابط صورة ترحيبية احترافية للتعليم والترجمة
+WELCOME_IMAGE_URL = "https://images.unsplash.com/photo-1546410531-bb4caa6b424d?w=800"
+
+# قاعدة البيانات الشاملة للمعلم الذكي والترجمة السريعة
 DICTIONARY_DATA = {
-    "hello": {"translation": "مرحباً 👋🔥", "pronunciation": "هَلُوو 🗣️", "example_en": "Hello! How are you today? 🤔", "example_ar": "مرحباً! كيف حالك اليوم؟"},
-    "achieve": {"translation": "يحقق / ينجز 🎯💪", "pronunciation": "أَشِيفْ 🗣️", "example_en": "You can achieve your goals. 📈", "example_ar": "يمكنك تحقيق أهدافك."},
-    "believe": {"translation": "يصدق / يؤمن بـ 🧠✨", "pronunciation": "بِيلِيفْ 🗣️", "example_en": "Always believe in yourself. 👑", "example_ar": "آمن بنفسك دائماً."},
-    "challenge": {"translation": "تحدي ⚔️🔥", "pronunciation": "تْشَالِينْجْ 🗣️", "example_en": "Learning English is a great challenge. 📚", "example_ar": "تعلم الإنجليزية هو تحدٍ كبير."},
-    "improve": {"translation": "يحسّن / يطوّر 🚀⚡", "pronunciation": "إِمْبْرُوفْ 🗣️", "example_en": "Practice every day to improve. 📖", "example_ar": "تدرب كل يوم لتحسين مستواك."},
-    "opportunity": {"translation": "فرصة 💎🌟", "pronunciation": "أُوبُرْتْيُونِيتِي 🗣️", "example_en": "Don't miss this opportunity. 🛑", "example_ar": "لا تضيع هذه الفرصة."},
-    "success": {"translation": "نجاح 🏆👑", "pronunciation": "سَكْسِيسْ 🗣️", "example_en": "Confidence is the key to success. 🔑", "example_ar": "الثقة هي مفتاح النجاح."},
-    "focus": {"translation": "يركز 👁️🔍", "pronunciation": "فُوكَسْ 🗣️", "example_en": "You need to focus on your study. 📝", "example_ar": "تحتاج إلى التركيز على دراستك."},
-    "same": {"translation": "نفس الشيء / مِثْل 🔀👥", "pronunciation": "سِيوْم 🗣️", "example_en": "We have the same opinion. 🤝", "example_ar": "لدينا نفس الرأي."},
-    "opinion": {"translation": "رأي / وجهة نظر  💭💡", "pronunciation": "أُوبِينْيُوْن 🗣️", "example_en": "In my opinion, you are right. 👍", "example_ar": "في رأيي، أنت على حق."},
-    "the": {"translation": "الـ (أداة التعريف) 🌐", "pronunciation": "ذَا 🗣️", "example_en": "The book is on the table. 📘", "example_ar": "الكتاب على الطاولة."},
-    "beautiful": {"translation": "جميل ✨🌸", "pronunciation": "بْيُوتِيفُل 🗣️", "example_en": "What a beautiful day! ☀️", "example_ar": "يا له من يوم جميل!"},
-    "understand": {"translation": "يفهم 🧠💡", "pronunciation": "أَنْدَرْسْتَانْد 🗣️", "example_en": "I understand what you mean.🤝", "example_ar": "أنا أفهم ما تقصده."},
-    "challenge": {"translation": "تحدي ⚔️💪", "pronunciation": "تْشَالِينْج 🗣️", "example_en": "Accept the challenge! 🔥", "example_ar": "اقبل التحدي!"}
+    "hello": {"tr_ar": "مرحباً 👋", "tr_en": "hello", "pron": "هَلُوو 🗣️", "ex_en": "Hello! How are you today? 🤔", "ex_ar": "مرحباً! كيف حالك اليوم؟"},
+    "same": {"tr_ar": "نفس الشيء / مِثْل 🔀", "tr_en": "same", "pron": "سِيوْم 🗣️", "ex_en": "We have the same opinion. 🤝", "ex_ar": "لدينا نفس الرأي."},
+    "opinion": {"tr_ar": "رأي / وجهة نظر 💭", "tr_en": "opinion", "pron": "أُوبِينْيُوْن 🗣️", "ex_en": "In my opinion, you are right. 👍", "ex_ar": "في رأيي، أنت على حق."},
+    "success": {"tr_ar": "نجاح 🏆", "tr_en": "success", "pron": "سَكْسِيسْ 🗣️", "ex_en": "Confidence is the key to success. 🔑", "ex_ar": "الثقة هي مفتاح النجاح."},
+    "improve": {"tr_ar": "يحسّن / يطوّر 🚀", "tr_en": "improve", "pron": "إِمْبْرُوفْ 🗣️", "ex_en": "Practice every day to improve. 📖", "ex_ar": "تدرب كل يوم لتحسين مستواك."},
+    "the": {"tr_ar": "الـ (أداة التعريف) 🌐", "tr_en": "the", "pron": "ذَا 🗣️", "ex_en": "The book is on the table. 📘", "ex_ar": "الكتاب على الطاولة."},
+    "potato": {"tr_ar": "بطاطا 🥔", "tr_en": "potato", "pron": "بُوتِيتُو 🗣️", "ex_en": "I love eating fried potatoes! 🍟", "ex_ar": "أنا أحب أكل البطاطا المقلية!"}
 }
 
-# دالة ذكية لتوليد نطق وترجمة تقريبية لأي كلمة إنجليزية غير مضافة تلقائياً لمنع ظهور رسالة الخطأ!
+# قاموس سريع للتحويل العكسي (من عربي إلى إنجليزي)
+ARABIC_TO_ENGLISH = {
+    "مرحبا": "Hello / Welcome 👋",
+    "نفس الشيء": "Same 🔀",
+    "راي": "Opinion 💭",
+    "رأيي": "In my opinion 💭",
+    "نجاح": "Success 🏆",
+    "تطوير": "Improvement / Development 🚀",
+    "بطاطا": "Potato 🥔"
+}
+
+# دالة ذكية لتوليد نطق وترجمة تقريبية لأي كلمة خارج القاموس
 def automatic_translator(word):
-    # قمنا ببرمجة محاكي نطق ذكي بسيط للحروف الشائعة
     pron = word
-    pron = re.sub(action := r'tion', 'شَنْ', pron)
+    pron = re.sub(r'tion', 'شَنْ', pron)
     pron = re.sub(r'ee|ea', 'ِ يـ', pron)
     pron = re.sub(r'oo', 'ُ و', pron)
     pron = re.sub(r'sh', 'شْ', pron)
     pron = re.sub(r'ch', 'تْشْ', pron)
     pron = re.sub(r'th', 'ذْ', pron)
-    pron = re.sub(r'ce|ci|cy', 'سْ', pron)
-    pron = re.sub(r'g', 'جْ', pron)
-    
     return {
-        "translation": f"كلمة إنجليزية جديدة مضافة للتعلم الذكي 📚",
-        "pronunciation": f"{pron.upper()} (نطق تقريبي تلقائي) 🗣️",
-        "example_en": f"I like the word '{word}'! ⭐",
-        "example_ar": f"أنا أحب كلمة '{word}'!"
+        "tr_ar": "كلمة جديدة (ترجمة تلقائية) 📚",
+        "pron": f"{pron.upper()} 🗣️",
+        "ex_en": f"Let's learn the word '{word}'! ⭐",
+        "ex_ar": f"فلنتعلم كلمة '{word}'!"
     }
 
-# إعداد زر القائمة الأزرق تلقائياً عند بدء البوت
+# إعداد زر القائمة الأزرق التلقائي (Menu)
 async def post_init(application: Application) -> None:
-    commands = [
-        BotCommand("start", "🚀 تشغيل البوت وفتح القائمة التعليمية"),
-        BotCommand("help", "❓ المساعدة وطريقة الاستخدام")
-    ]
+    commands = [BotCommand("start", "🔄 فتح الواجهة الرئيسية والاختيارات")]
     await application.bot.set_my_commands(commands)
-    print("🔹 تم تفعيل زر الأوامر الأزرق بنجاح...")
 
-# أمر /start بترحيب احترافي باسمك
+# أمر /start مع الصورة والواجهة الاحترافية بعلم فلسطين 🇵🇸
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    context.user_data['mode'] = 'smart_teacher'
+    
     welcome_text = (
-        "🇺🇸 ⚔️ **مرحباً بك في بوت الترجمة والتعليم الاحترافي** 🇬🇧\n"
-        "👑 **بإشراف المطور: قصي** 👑\n\n"
-        "🤖 **ماذا يمكنني أن أفعل؟**\n"
-        "1️⃣ **المعلم الذكي:** أرسل لي **أي كلمة إنجليزية** في العالم (مثال: *opinion* أو *the* أو *beautiful*) وسأعطيك معناها ونطقها فوراً!\n"
-        "2️⃣ **القسم التعليمي:** اضغط على الأزرار بالأسفل لاستكشاف الدروس السريعة 👇\n\n"
-        "🔵 _اضغط على زر Menu الأزرق على الجانب لرؤية الأوامر في أي وقت!_"
+        "🇺🇸 **WELCOME TO THE PROFESSIONAL TRANSLATOR BOT** 🇬🇧\n"
+        "✨ **مرحباً بك في بوت الترجمة الاحترافي الخارق** ✨\n"
+        "👑 **By Developer: Qusai | بإشراف المطور قصي** 👑\n\n"
+        "🤖 **الوضع الحالي:** 🧠 _المعلم الذكي (نطق + أمثلة)_\n\n"
+        "👇 **اختر نظام تشغيل البوت الذي تريده من الأزرار بالأسفل:**"
     )
     
+    # تم وضع علم فلسطين 🇵🇸 في الأزرار هنا
     keyboard = [
-        [InlineKeyboardButton("📚 أهم الكلمات الشائعة", callback_data="edu_words"),
-         InlineKeyboardButton("🗣️ محادثات يومية", callback_data="edu_conv")],
-        [InlineKeyboardButton("📐 قواعد أساسية سريعة", callback_data="edu_grammar")]
+        [InlineKeyboardButton("🇺🇸 ➡️ 🇵🇸 English to Arabic", callback_data="mode_en_to_ar")],
+        [InlineKeyboardButton("🇵🇸 ➡️ 🇺🇸 Arabic to English", callback_data="mode_ar_to_en")],
+        [InlineKeyboardButton("🧠 Smart Teacher | المعلم الذكي", callback_data="mode_smart")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
-    await update.message.reply_text(welcome_text, reply_markup=reply_markup, parse_mode="Markdown")
-
-# معالجة الكلمات وعرض النطق والمثال بالأسلوب المباشر الفخم لقصي
-async def handle_translation(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    user_text = update.message.text.strip().lower()
     
-    # التحقق إذا كانت الكلمة مثبتة، أو توليد بياناتها تلقائياً
-    if user_text in DICTIONARY_DATA:
-        word_info = DICTIONARY_DATA[user_text]
-    else:
-        word_info = automatic_translator(user_text)
-        
-    response = (
-        f"🇺🇸 **الكلمة:** `{user_text.upper()}`\n\n"
-        f"🎈 **معناها:** {word_info['translation']}\n"
-        f"📢 **وتلفظ:** {word_info['pronunciation']}\n\n"
-        f"📌 **مثال توضيحي (Example):**\n"
-        f"• `{word_info['example_en']}`\n"
-        f"• _ترجمة المثال:_ {word_info['example_ar']}\n\n"
-        f"--- \n"
-        f"💡 _نصيحة المطور قصي:_ استمر في إرسال الكلمات لتقوية لغتك يومياً! ✨"
+    await update.message.reply_photo(
+        photo=WELCOME_IMAGE_URL,
+        caption=welcome_text,
+        reply_markup=reply_markup,
+        parse_mode="Markdown"
     )
-    
-    await update.message.reply_text(response, parse_mode="Markdown")
 
-# معالجة الضغط على أزرار التعليم
-async def handle_edu_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+# معالجة الضغط على أزرار الخيارات وتغيير وضع البوت
+async def handle_mode_switch(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
     await query.answer()
     
-    action = query.data
+    if query.data == "mode_en_to_ar":
+        context.user_data['mode'] = 'en_to_ar'
+        await query.message.reply_text("🔄 **تم تفعيل الوضع:** [ إنجليزي ⬅️ عربي 🇵🇸 ]\n📥 أرسل لي أي كلمة بالإنجليزية وسأعطيك معناها المباشر فوراً!")
     
-    if action == "edu_words":
-        words_text = (
-            "🎯 **أهم الكلمات المتاحة (اكتبها للبوت لترى النطق والمعنى والمثال!):**\n\n"
-            "• **the** ➡️ أداة التعريف\n"
-            "• **opinion** ➡️ رأي\n"
-            "• **beautiful** ➡️ جميل\n"
-            "• **same** ➡️ نفس الشيء\n"
-            "• **Success** ➡️ نجاح\n"
-            "• **Improve** ➡️ يحسّن"
-        )
-        await query.message.reply_text(words_text, parse_mode="Markdown")
+    elif query.data == "mode_ar_to_en":
+        context.user_data['mode'] = 'ar_to_en'
+        await query.message.reply_text("🔄 **تم تفعيل الوضع:** [ عربي 🇵🇸 ⬅️ إنجليزي ]\n📥 أرسل لي أي كلمة بالعربية وسأعطيك ترجمتها بالإنجليزية فوراً!")
         
-    elif action == "edu_conv":
-        conv_text = (
-            "🗣️ **محادثات يومية هامة:**\n\n"
-            "🤝 **للترحيب والتعارف:**\n"
-            "• Nice to meet you ➡️ فرصة سعيدة.\n"
-            "• Where are you from? ➡️ من أين أنت؟"
+    elif query.data == "mode_smart":
+        context.user_data['mode'] = 'smart_teacher'
+        await query.message.reply_text("🧠 **تم تفعيل الوضع:** [ المعلم الذكي ]\n📥 أرسل الكلمة الإنجليزية لترى النطق بالعربي والأمثلة الكاملة!")
+
+# معالجة الرسائل بناءً على الخيار المختار
+async def handle_messages(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    user_text = update.message.text.strip().lower()
+    current_mode = context.user_data.get('mode', 'smart_teacher')
+    
+    # 1️⃣ خيار: إنجليزي إلى عربي مباشر
+    if current_mode == 'en_to_ar':
+        if user_text in DICTIONARY_DATA:
+            res = f"🇺🇸 `{user_text.upper()}` ➡️ 🇵🇸 *معناها:* {DICTIONARY_DATA[user_text]['tr_ar']}"
+        else:
+            res = f"🎯 *ترجمة تقريبية للكلمة:* {user_text} ➡️ تعني كلمة إنجليزية جديدة."
+        await update.message.reply_text(res, parse_mode="Markdown")
+
+    # 2️⃣ خيار: عربي إلى إنجليزي مباشر
+    elif current_mode == 'ar_to_en':
+        clean_text = user_text.replace("أ", "ا").replace("إ", "ا")
+        if clean_text in ARABIC_TO_ENGLISH:
+            res = f"🇵🇸 *{update.message.text}* ➡️ 🇺🇸 ` {ARABIC_TO_ENGLISH[clean_text]} `"
+        else:
+            res = f"✨ لم أجد الكلمة بدقة، تأكد من كتابتها بشكل صحيح (مثال: بطاطا، مرحبا، نجاح)."
+        await update.message.reply_text(res, parse_mode="Markdown")
+
+    # 3️⃣ خيار: المعلم الذكي
+    elif current_mode == 'smart_teacher':
+        if user_text in DICTIONARY_DATA:
+            word_info = DICTIONARY_DATA[user_text]
+        else:
+            word_info = automatic_translator(user_text)
+            
+        response = (
+            f"🇺🇸 **الكلمة:** `{user_text.upper()}`\n\n"
+            f"🎈 **معناها:** {word_info['tr_ar']}\n"
+            f"📢 **وتلفظ:** {word_info['pron']}\n\n"
+            f"📌 **مثال توضيحي (Example):**\n"
+            f"• `{word_info['ex_en']}`\n"
+            f"• _ترجمة المثال:_ {word_info['ex_ar']}\n\n"
+            f"--- \n"
+            f"💡 _نصيحة المطور قصي:_ استمر في إرسال الكلمات لتقوية لغتك! ✨"
         )
-        await query.message.reply_text(conv_text, parse_mode="Markdown")
-        
-    elif action == "edu_grammar":
-        grammar_text = (
-            "📐 **قاعدة ذهبية سريعة (الزمن المضارع البسيط):**\n\n"
-            "• مع الضمائر *(I, They, We, You)* ➡️ نضع الفعل كما هو.\n"
-            "  *مثال:* I play football.\n\n"
-            "• مع الضمائر *(He, She, It)* ➡️ نضيف **S** للفعل.\n"
-            "  *مثال:* He plays football."
-        )
-        await query.message.reply_text(grammar_text, parse_mode="Markdown")
+        await update.message.reply_text(response, parse_mode="Markdown")
 
 def main():
-    # ربط دالة تشغيل الزر الأزرق بالـ post_init
     application = Application.builder().token(TOKEN).post_init(post_init).build()
     
     application.add_handler(CommandHandler("start", start))
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_translation))
-    application.add_handler(CallbackQueryHandler(handle_edu_buttons))
+    application.add_handler(CallbackQueryHandler(handle_mode_switch))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_messages))
 
-    print("بوت المعلم الشامل مع الزر الأزرق يعمل الآن بنجاح لقصي...")
+    print("البوت الخارق بعلم فلسطين يعمل الآن بنجاح لقصي...")
     application.run_polling()
 
 if __name__ == '__main__':
