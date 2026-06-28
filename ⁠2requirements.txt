@@ -1,2 +1,1 @@
-pyTelegramBotAPI
-deep-translator
+python 2bot.py
