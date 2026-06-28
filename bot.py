@@ -49,10 +49,6 @@ SLANG_DICTIONARY = {
     "brb": "Be right back ⬅️ (سأعود فوراً / برب)"
 }
 
-COMMON_CORRECTIONS = {
-    "tebol": "table", "set in": "sat on", "the cat set": "the cat sat"
-}
-
 LEVELS_DATA = {
     1: {"title": "🌱 لفل 1 - المبتدئ الشامل", "sentences": [{"en": "The cat is sleeping on the chair.", "ar": "القطة تنام على الكرسي."}]},
     2: {"title": "🌿 لفل 2 - المبتدئ المتقدم", "sentences": [{"en": "I want to learn English to get a good job.", "ar": "أريد أن أتعلم الإنجليزية لأحصل على وظيفة جيدة."}]},
@@ -73,7 +69,6 @@ SHOP_ITEMS = {
 # ====================================================================
 def set_all_bot_commands():
     try:
-        # جميع الـ 20 ميزة والأوامر مجمعة ومنظمة للزر الأزرق لبوت الأدمن
         admin_commands = [
             types.BotCommand("admin", "👑 فتح لوحة التحكم الرئيسية الشاملة"),
             types.BotCommand("toggle_free", "🎁 تفعيل / إيقاف الوضع المجاني فوراً"),
@@ -93,7 +88,7 @@ def set_all_bot_commands():
             types.BotCommand("start", "✨ تشغيل البوت واختيار وضع الترجمة والتعليم")
         ]
         bot1.set_my_commands(user_commands)
-        logging.info("✅ تم تحديث وحقن جميع الأوامر داخل الزر الأزرق للبوتين بنجاح!")
+        logging.info("✅ تم حقن الأوامر داخل الزر الأزرق بنجاح!")
     except Exception as e:
         logging.error(f"❌ خطأ تعيين أوامر الزر الأزرق: {e}")
 
@@ -162,70 +157,85 @@ def setup_admin_bot_handlers():
         )
         bot2.send_message(chat_id, msg, reply_markup=get_admin_main_keyboard(), parse_mode="Markdown")
 
-    # معالجة كل أمر قادم كرسالة نصية أو كأمر من الزر الأزرق
-    @bot2.message_handler(func=lambda msg: msg.text and msg.text.startswith('/'))
-    def handle_admin_commands(message):
+    # تحديد الأوامر الصريحة والمستقلة لكل زر في القائمة المنسدلة (الزر الأزرق)
+    @bot2.message_handler(commands=['start', 'admin', 'panel'])
+    def cmd_admin_start(message):
         if message.from_user.id != ADMIN_CHAT_ID: return
-        cmd = message.text.split()[0].replace('/', '')
+        GlobalConfig.waiting_states[message.chat.id] = None
+        send_admin_panel(message.chat.id)
 
-        if cmd in ['start', 'admin', 'panel']:
-            GlobalConfig.waiting_states[message.chat.id] = None
-            send_admin_panel(message.chat.id)
-            
-        elif cmd == 'toggle_free':
-            GlobalConfig.FREE_MODE = not GlobalConfig.FREE_MODE
-            bot2.send_message(message.chat.id, f"🎁 تم تغيير وضع المتجر المجاني إلى: `{GlobalConfig.FREE_MODE}` لحظياً!", parse_mode="Markdown")
-            send_admin_panel(message.chat.id)
-            
-        elif cmd == 'toggle_maint':
-            GlobalConfig.MAINTENANCE_MODE = not GlobalConfig.MAINTENANCE_MODE
-            bot2.send_message(message.chat.id, f"🚨 تم تغيير وضع الصيانة العامة إلى: `{GlobalConfig.MAINTENANCE_MODE}`", parse_mode="Markdown")
-            
-        elif cmd == 'broadcast':
-            GlobalConfig.waiting_states[message.chat.id] = "waiting_for_broadcast"
-            bot2.send_message(message.chat.id, "📢 **أدخل نص الرسالة المراد إذاعتها لجميع المستخدمين فوراً:**")
-            
-        elif cmd == 'view_clones':
-            if not GlobalConfig.active_clones:
-                bot2.send_message(message.chat.id, "📭 لا توجد أي بوتات مصنوعة تعمل حالياً بالخلفية.")
-            else:
-                txt = "🤖 **قائمة البوتات المصنوعة النشطة:**\n\n"
-                for idx, tkn in enumerate(GlobalConfig.active_clones.keys(), 1):
-                    txt += f"{idx} - `{tkn}`\n"
-                bot2.send_message(message.chat.id, txt, parse_mode="Markdown")
-                
-        elif cmd == 'view_stats':
-            stats = (
-                f"📊 **التقرير الإحصائي والمالي للمنظومة:**\n\n"
-                f"1️⃣ إجمالي مستخدمين تفاعلوا: `{len(GlobalConfig.total_users_interacted)}` مستخدم\n"
-                f"2️⃣ عدد البوتات المستضافة بالخلفية: `{len(GlobalConfig.active_clones)}` بوت\n"
-                f"3️⃣ الطلبات المعلقة بالمراجعة حالياً: `{len(GlobalConfig.pending_orders)}` طلب\n"
-                f"4️⃣ وضع المتجر الحالي: " + ("مفتوح مجاني" if GlobalConfig.FREE_MODE else "مدفوع كاش")
-            )
-            bot2.send_message(message.chat.id, stats, parse_mode="Markdown")
-            
-        elif cmd == 'edit_cash':
-            GlobalConfig.waiting_states[message.chat.id] = "waiting_for_cash"
-            bot2.send_message(message.chat.id, "💳 **أرسل الرقم الجديد والاسم بالصيغة التالية تماماً:**\n`010xxxxxxx - اسم المستلم`")
-            
-        elif cmd == 'edit_welcome':
-            GlobalConfig.waiting_states[message.chat.id] = "waiting_for_welcome"
-            bot2.send_message(message.chat.id, "📝 **أرسل نص رسالة الترحيب الجديدة للبوت الأساسي:**")
-            
-        elif cmd == 'clear_users':
-            GlobalConfig.total_users_interacted.clear()
-            bot2.send_message(message.chat.id, "🗑️ تم تصفير وإفراغ ذاكرة المشتركين بنجاح.")
-            
-        elif cmd == 'pending':
-            if not GlobalConfig.pending_orders:
-                bot2.send_message(message.chat.id, "✅ لا توجد أي طلبات معلقة قيد المراجعة حالياً.")
-            else:
-                bot2.send_message(message.chat.id, f"⏳ يوجد حالياً `{len(GlobalConfig.pending_orders)}` طلبات معلقة بانتظار مراجعتك.")
-                
-        elif cmd == 'myid':
-            bot2.reply_to(message, f"🆔 رقم الـ ID الخاص بحسابك هو: `{message.from_user.id}`", parse_mode="Markdown")
+    @bot2.message_handler(commands=['toggle_free'])
+    def cmd_admin_free(message):
+        if message.from_user.id != ADMIN_CHAT_ID: return
+        GlobalConfig.FREE_MODE = not GlobalConfig.FREE_MODE
+        bot2.send_message(message.chat.id, f"🎁 تم تغيير وضع المتجر المجاني إلى: `{GlobalConfig.FREE_MODE}` لحظياً!", parse_mode="Markdown")
 
-    # معالجة الضغط على أزرار لوحة التحكم المباشرة (Inlines)
+    @bot2.message_handler(commands=['toggle_maint'])
+    def cmd_admin_maint(message):
+        if message.from_user.id != ADMIN_CHAT_ID: return
+        GlobalConfig.MAINTENANCE_MODE = not GlobalConfig.MAINTENANCE_MODE
+        bot2.send_message(message.chat.id, f"🚨 تم تغيير وضع الصيانة العامة إلى: `{GlobalConfig.MAINTENANCE_MODE}`", parse_mode="Markdown")
+
+    @bot2.message_handler(commands=['broadcast'])
+    def cmd_admin_broadcast(message):
+        if message.from_user.id != ADMIN_CHAT_ID: return
+        GlobalConfig.waiting_states[message.chat.id] = "waiting_for_broadcast"
+        bot2.send_message(message.chat.id, "📢 **أدخل نص الرسالة المراد إذاعتها لجميع المستخدمين فوراً:**")
+
+    @bot2.message_handler(commands=['view_clones'])
+    def cmd_admin_clones(message):
+        if message.from_user.id != ADMIN_CHAT_ID: return
+        if not GlobalConfig.active_clones:
+            bot2.send_message(message.chat.id, "📭 لا توجد أي بوتات مصنوعة تعمل حالياً بالخلفية.")
+        else:
+            txt = "🤖 **قائمة البوتات المصنوعة النشطة:**\n\n"
+            for idx, tkn in enumerate(GlobalConfig.active_clones.keys(), 1):
+                txt += f"{idx} - `{tkn}`\n"
+            bot2.send_message(message.chat.id, txt, parse_mode="Markdown")
+
+    @bot2.message_handler(commands=['view_stats'])
+    def cmd_admin_stats(message):
+        if message.from_user.id != ADMIN_CHAT_ID: return
+        stats = (
+            f"📊 **التقرير الإحصائي والمالي للمنظومة:**\n\n"
+            f"1️⃣ إجمالي مستخدمين تفاعلوا: `{len(GlobalConfig.total_users_interacted)}` مستخدم\n"
+            f"2️⃣ عدد البوتات المستضافة بالخلفية: `{len(GlobalConfig.active_clones)}` بوت\n"
+            f"3️⃣ الطلبات المعلقة بالمراجعة حالياً: `{len(GlobalConfig.pending_orders)}` طلب\n"
+            f"4️⃣ وضع المتجر الحالي: " + ("مفتوح مجاني" if GlobalConfig.FREE_MODE else "مدفوع كاش")
+        )
+        bot2.send_message(message.chat.id, stats, parse_mode="Markdown")
+
+    @bot2.message_handler(commands=['edit_cash'])
+    def cmd_admin_editcash(message):
+        if message.from_user.id != ADMIN_CHAT_ID: return
+        GlobalConfig.waiting_states[message.chat.id] = "waiting_for_cash"
+        bot2.send_message(message.chat.id, "💳 **أرسل الرقم الجديد والاسم بالصيغة التالية تماماً:**\n`010xxxxxxx - اسم المستلم`")
+
+    @bot2.message_handler(commands=['edit_welcome'])
+    def cmd_admin_editwelcome(message):
+        if message.from_user.id != ADMIN_CHAT_ID: return
+        GlobalConfig.waiting_states[message.chat.id] = "waiting_for_welcome"
+        bot2.send_message(message.chat.id, "📝 **أرسل نص رسالة الترحيب الجديدة للبوت الأساسي:**")
+
+    @bot2.message_handler(commands=['clear_users'])
+    def cmd_admin_clear(message):
+        if message.from_user.id != ADMIN_CHAT_ID: return
+        GlobalConfig.total_users_interacted.clear()
+        bot2.send_message(message.chat.id, "🗑️ تم تصفير وإفراغ ذاكرة المشتركين بنجاح.")
+
+    @bot2.message_handler(commands=['pending'])
+    def cmd_admin_pending(message):
+        if message.from_user.id != ADMIN_CHAT_ID: return
+        if not GlobalConfig.pending_orders:
+            bot2.send_message(message.chat.id, "✅ لا توجد أي طلبات معلقة قيد المراجعة حالياً.")
+        else:
+            bot2.send_message(message.chat.id, f"⏳ يوجد حالياً `{len(GlobalConfig.pending_orders)}` طلبات معلقة بانتظار مراجعتك.")
+
+    @bot2.message_handler(commands=['myid'])
+    def cmd_admin_myid(message):
+        bot2.reply_to(message, f"🆔 رقم الـ ID الخاص بحسابك هو: `{message.from_user.id}`", parse_mode="Markdown")
+
+    # معالجة الأزرار المباشرة تحت الرسائل (Inline Buttons)
     @bot2.callback_query_handler(func=lambda call: call.data.startswith("adm_"))
     def admin_inline_actions(call):
         if call.from_user.id != ADMIN_CHAT_ID: return
@@ -238,34 +248,29 @@ def setup_admin_bot_handlers():
             bot2.answer_callback_query(call.id, f"وضع الصيانة: {GlobalConfig.MAINTENANCE_MODE}", show_alert=True)
         elif call.data == "adm_view_clones":
             bot2.answer_callback_query(call.id)
-            class FakeMsg: text = "/view_clones"; chat = call.message.chat; from_user = call.from_user
-            handle_admin_commands(FakeMsg)
+            cmd_admin_clones(call.message)
             return
         elif call.data == "adm_view_stats":
             bot2.answer_callback_query(call.id)
-            class FakeMsg: text = "/view_stats"; chat = call.message.chat; from_user = call.from_user
-            handle_admin_commands(FakeMsg)
+            cmd_admin_stats(call.message)
             return
         elif call.data == "adm_req_broadcast":
             bot2.answer_callback_query(call.id)
-            class FakeMsg: text = "/broadcast"; chat = call.message.chat; from_user = call.from_user
-            handle_admin_commands(FakeMsg)
+            cmd_admin_broadcast(call.message)
             return
         elif call.data == "adm_req_cash":
             bot2.answer_callback_query(call.id)
-            class FakeMsg: text = "/edit_cash"; chat = call.message.chat; from_user = call.from_user
-            handle_admin_commands(FakeMsg)
+            cmd_admin_editcash(call.message)
             return
         elif call.data == "adm_req_welcome":
             bot2.answer_callback_query(call.id)
-            class FakeMsg: text = "/edit_welcome"; chat = call.message.chat; from_user = call.from_user
-            handle_admin_commands(FakeMsg)
+            cmd_admin_editwelcome(call.message)
             return
         elif call.data == "adm_clear_users":
             GlobalConfig.total_users_interacted.clear()
             bot2.answer_callback_query(call.id, "🗑️ تم تصفير ذاكرة المشتركين!", show_alert=True)
 
-        # تحديث نص لوحة التحكم ليعكس التغيير فوراً
+        # إعادة بناء القائمة وتحديثها
         msg = (
             f"👑 **مرحباً بك يا مطور قصي في نظام الإدارة المركزي المطور:**\n\n"
             f"📊 **حالة السيرفر الحالية:**\n"
@@ -281,8 +286,8 @@ def setup_admin_bot_handlers():
     def review_processing(call):
         if call.from_user.id != ADMIN_CHAT_ID: return
         parts = call.data.split("_")
-        action = parts[1]      # approve أو reject
-        order_id = parts[2]    # رقم المعاملة
+        action = parts[1]      
+        order_id = parts[2]    
         
         order_data = GlobalConfig.pending_orders.get(order_id)
         if not order_data:
@@ -301,12 +306,12 @@ def setup_admin_bot_handlers():
             )
             bot1.send_message(user_chat_id, success_text, parse_mode="Markdown")
             bot2.edit_message_caption("🟢 **تم قبول هذا الطلب بنجاح وتسليم الملفات للمستخدم.**", call.message.chat.id, call.message.message_id)
-            bot2.answer_callback_query(call.id, "✅ تم قبول المعاملة بنجاح وتسليم المنتج للمستخدم!")
+            bot2.answer_callback_query(call.id, "✅ تم قبول المعاملة بنجاح!")
             
         elif action == "reject":
             reject_text = (
                 f"❌ **نأسف، تم رفض طلب الشراء الخاص بك لمنتج:**\n{item_info['name']}\n\n"
-                f"⚠️ **السبب:** إيصال التحويل المرسل غير واضح أو لم يصل المبلغ لـ فودافون كاش بعد. يرجى التواصل مع الدعم أو إعادة إرسال الصورة بشكل صحيح."
+                f"⚠️ **السبب:** إيصال التحويل المرسل غير واضح أو لم يصل المبلغ لـ فودافون كاش بعد. يرجى إعادة إرسال الصورة بشكل صحيح."
             )
             bot1.send_message(user_chat_id, reject_text)
             bot2.edit_message_caption("🔴 **تم رفض وإلغاء هذا الطلب.**", call.message.chat.id, call.message.message_id)
@@ -314,11 +319,11 @@ def setup_admin_bot_handlers():
             
         GlobalConfig.pending_orders.pop(order_id, None)
 
-    # استقبال مدخلات الكتابة للوحات التحكم (الإذاعة وتغيير الرقم والاسم)
-    @bot2.message_handler(func=lambda message: GlobalConfig.waiting_states.get(message.chat.id) is not None)
+    # استقبال مدخلات الكتابة للوحات التحكم (الإذاعة وتغيير البيانات) التي لا تبدأ بـ /
+    @bot2.message_handler(func=lambda message: GlobalConfig.waiting_states.get(message.chat.id) is not None and not message.text.startswith('/'))
     def handle_admin_inputs(message):
         state = GlobalConfig.waiting_states.get(message.chat.id)
-        GlobalConfig.waiting_states[message.chat.id] = None # إعادة التعيين
+        GlobalConfig.waiting_states[message.chat.id] = None 
         
         if state == "waiting_for_broadcast":
             txt = message.text
@@ -519,7 +524,7 @@ def run_admin_bot():
     bot2.infinity_polling()
 
 if __name__ == '__main__':
-    # تعيين الأوامر وتفعيل الزر الأزرق للبوتين قبل تشغيل الـ Polling
+    # تهيئة وحقن الأوامر في الأزرار الزرقاء بنجاح وأمان تفرعي
     set_all_bot_commands()
     
     t1 = threading.Thread(target=run_main_bot, daemon=True)
