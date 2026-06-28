@@ -13,6 +13,9 @@ logging.basicConfig(level=logging.INFO)
 MAIN_TOKEN = "8759522486:AAHfUEiwijT8N2WdL9WbRCDk8gXor_Ka-IM"
 bot = telebot.TeleBot(MAIN_TOKEN)
 
+# يوزر الأدمن الخاص بك للتواصل والمبيعات
+ADMIN_USERNAME = "sssss111126"
+
 user_modes = {}
 user_levels = {}
 active_clones = {}  # لتخزين البوتات المشغلة وتجنب التكرار
@@ -42,15 +45,34 @@ LEVELS_DATA = {
     5: {"title": "👑 لفل 5 - المحترف الخبير", "sentences": [{"en": "Advanced algorithms enhance system efficiency substantially.", "ar": "إن خوارزميات التعلم الآلي المتقدمة تعزز كفاءة النظام بشكل كبير."}]}
 }
 
-# لوحة الأزرار الرئيسية المحدثة
+# بيانات المنتجات في المتجر (الكتب والأدوات والأسعار)
+SHOP_ITEMS = {
+    "book_grammar": {"name": "📘 كتاب القواعد الشامل (من الصفر للاحتراف)", "price": "$15.00"},
+    "book_idioms": {"name": "📙 كتاب المصطلحات الأمريكية الدارجة (Slang)", "price": "$10.00"},
+    "pack_audio": {"name": "🎧 الحقيبة الصوتية لتقوية مهارة الاستماع والنطق", "price": "$25.00"},
+    "course_vip": {"name": "👑 كورس القناة الخاصة المدمج + متابعة وتصحيح يومي", "price": "$40.00"}
+}
+
+# لوحة الأزرار الرئيسية المحدثة بالكامل شاملة المتجر
 def get_main_keyboard():
     keyboard = types.InlineKeyboardMarkup(row_width=1)
     btn1 = types.InlineKeyboardButton("🇺🇸 ➡️ 🇵🇸 English to Arabic", callback_data="mode_en_to_ar")
     btn2 = types.InlineKeyboardButton("🇵🇸 ➡️ 🇺🇸 Arabic to English", callback_data="mode_ar_to_en")
     btn3 = types.InlineKeyboardButton("🧠 Smart Teacher | المعلم الذكي", callback_data="mode_smart")
     btn4 = types.InlineKeyboardButton("📊 تقييم المستوى وتحديد اللفل (1-5)", callback_data="mode_levels_menu")
-    btn5 = types.InlineKeyboardButton("🤖 اصنع بوت ترجمة خاص بك مجاناً", callback_data="mode_make_bot")
-    keyboard.add(btn1, btn2, btn3, btn4, btn5)
+    btn5 = types.InlineKeyboardButton("🛍️ متجر الأدوات الاحترافية (Shop)", callback_data="mode_shop_menu")
+    btn6 = types.InlineKeyboardButton("🤖 اصنع بوت ترجمة خاص بك مجاناً", callback_data="mode_make_bot")
+    keyboard.add(btn1, btn2, btn3, btn4, btn5, btn6)
+    return keyboard
+
+# لوحة أزرار المتجر
+def get_shop_keyboard():
+    keyboard = types.InlineKeyboardMarkup(row_width=1)
+    for item_id, item_info in SHOP_ITEMS.items():
+        # زر لكل منتج يوضح الاسم والسعر
+        btn_text = f"{item_info['name']} 💰 {item_info['price']}"
+        keyboard.add(types.InlineKeyboardButton(btn_text, callback_data=f"buy_{item_id}"))
+    keyboard.add(types.InlineKeyboardButton("🔙 العودة للقائمة الرئيسية", callback_data="back_to_main"))
     return keyboard
 
 def get_levels_keyboard():
@@ -84,6 +106,7 @@ def setup_bot_handlers(target_bot):
     @target_bot.callback_query_handler(func=lambda call: True)
     def callback_inline(call):
         chat_id = call.message.chat.id
+        
         if call.data == "mode_en_to_ar":
             user_modes[chat_id] = 'en_to_ar'
             target_bot.send_message(chat_id, "🔄 **تم تفعيل الوضع:** [ إنجليزي ⬅️ عربي ]\n📥 أرسل أي جملة بالإنجليزية!")
@@ -95,6 +118,35 @@ def setup_bot_handlers(target_bot):
             target_bot.send_message(chat_id, "🧠 **تم تفعيل الوضع:** [ المعلم الذكي ]")
         elif call.data == "mode_levels_menu":
             target_bot.send_message(chat_id, "📊 **اختر مستواك الحالي الحقيقي:**", reply_markup=get_levels_keyboard())
+        
+        # كود فتح المتجر الشامل
+        elif call.data == "mode_shop_menu":
+            shop_text = (
+                "🛍️ **مرحباً بك في متجر الأدوات والكتب الاحترافية!**\n\n"
+                "إليك أفضل الكتب والحقائب التعليمية المختارة بعناية لرفع مستواك إلى الاحتراف والطلاقة. "
+                "اختر المنتج الذي ترغب بشرائه من الأزرار أدناه: 👇"
+            )
+            target_bot.send_message(chat_id, shop_text, reply_markup=get_shop_keyboard(), parse_mode="Markdown")
+            
+        # كود معالجة ضغط أزرار الشراء داخل المتجر
+        elif call.data.startswith("buy_"):
+            item_id = call.data.split("_")[1] + "_" + call.data.split("_")[2]
+            item_info = SHOP_ITEMS.get(item_id)
+            
+            if item_info:
+                # إنشاء لوحة زر التوجيه للخاص بك
+                purchase_crypto_keyboard = types.InlineKeyboardMarkup()
+                url_button = types.InlineKeyboardButton(text="💬 تواصل مع المطور لشراء المنتج", url=f"t.me/{ADMIN_USERNAME}")
+                purchase_crypto_keyboard.add(url_button)
+                
+                success_order_text = (
+                    f"🛒 **طلب شراء جديد ومميز:**\n\n"
+                    f"📦 **المنتج:** {item_info['name']}\n"
+                    f"💰 **السعر:** `{item_info['price']}`\n\n"
+                    f"⚙️ لإتمام عملية الدفع واستلام ملفاتك وموادك التعليمية فوراً، يرجى الضغط على الزر بالأسفل للتواصل مباشرة مع المطور أدمن البوت على الخاص! 👇"
+                )
+                target_bot.send_message(chat_id, success_order_text, reply_markup=purchase_crypto_keyboard, parse_mode="Markdown")
+
         elif call.data == "mode_make_bot":
             user_modes[chat_id] = 'waiting_for_token'
             target_bot.send_message(chat_id, "🤖 **أهلاً بك في صانع البوتات الذكي!**\n\nقم بالذهاب إلى @BotFather وأنشئ بوت جديد، ثم قم بنسخ **التوكن (Token)** وأرسله لي هنا فوراً ليتم تشغيل بوتك الخاص!")
@@ -119,16 +171,13 @@ def setup_bot_handlers(target_bot):
         chat_id = message.chat.id
         current_mode = user_modes.get(chat_id, 'smart_teacher')
 
-        # استقبال التوكن وتشغيل البوت الجديد
         if current_mode == 'waiting_for_token':
-            if ":" in user_text and len(user_text) > 30: # تحقق مبدئي من صيغة التوكن
+            if ":" in user_text and len(user_text) > 30:
                 if user_text in active_clones:
                     target_bot.send_message(chat_id, "⚠️ هذا البوت يعمل بالفعل ومستضاف لدينا!")
                     return
-                
                 target_bot.send_message(chat_id, "⏳ جاري فحص التوكن وتجهيز خوادم البوت الخاص بك...")
                 
-                # تشغيل البوت الجديد في Thread مستقل تماماً
                 def start_clone(token):
                     try:
                         clone_bot = telebot.TeleBot(token)
@@ -183,5 +232,5 @@ def setup_bot_handlers(target_bot):
 # تشغيل البوت الرئيسي وتطبيق الـ Handlers عليه
 if __name__ == '__main__':
     setup_bot_handlers(bot)
-    print("البوت الرئيسي وصانع البوتات الذكي يعمل الآن بنجاح...")
+    print("البوت الرئيسي وصانع البوتات الذكي مع المتجر يعمل الآن بنجاح...")
     bot.infinity_polling()
