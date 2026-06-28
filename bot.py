@@ -9,18 +9,19 @@ from deep_translator import GoogleTranslator
 # تفعيل تسجيل الأخطاء
 logging.basicConfig(level=logging.INFO)
 
-# التوكن الرئيسي الخاص بك (المطور قصي)
+# التوكن الرئيسي الخاص بك
 MAIN_TOKEN = "8759522486:AAHfUEiwijT8N2WdL9WbRCDk8gXor_Ka-IM"
 bot = telebot.TeleBot(MAIN_TOKEN)
 
-# يوزر الأدمن الخاص بك للتواصل والمبيعات
-ADMIN_USERNAME = "sssss111126"
+# بيانات فودافون كاش الجديدة
+VODAFONE_NUMBER = "01094609897"
+VODAFONE_NAME = "نعيمه"
 
 user_modes = {}
 user_levels = {}
-active_clones = {}  # لتخزين البوتات المشغلة وتجنب التكرار
+active_clones = {}
 
-# البيانات الثابتة للبوت (الاختصارات، الأخطاء، والمستويات)
+# البيانات الثابتة للبوت
 SLANG_DICTIONARY = {
     "btw": "By the way ⬅️ (بالمناسبة / على فكرة)",
     "omg": "Oh my god ⬅️ (يا إلهي / أو ماي جاد)",
@@ -45,15 +46,14 @@ LEVELS_DATA = {
     5: {"title": "👑 لفل 5 - المحترف الخبير", "sentences": [{"en": "Advanced algorithms enhance system efficiency substantially.", "ar": "إن خوارزميات التعلم الآلي المتقدمة تعزز كفاءة النظام بشكل كبير."}]}
 }
 
-# بيانات المنتجات في المتجر (الكتب والأدوات والأسعار)
+# بيانات المنتجات في المتجر
 SHOP_ITEMS = {
-    "book_grammar": {"name": "📘 كتاب القواعد الشامل (من الصفر للاحتراف)", "price": "$15.00"},
-    "book_idioms": {"name": "📙 كتاب المصطلحات الأمريكية الدارجة (Slang)", "price": "$10.00"},
-    "pack_audio": {"name": "🎧 الحقيبة الصوتية لتقوية مهارة الاستماع والنطق", "price": "$25.00"},
-    "course_vip": {"name": "👑 كورس القناة الخاصة المدمج + متابعة وتصحيح يومي", "price": "$40.00"}
+    "book_grammar": {"name": "📘 كتاب القواعد الشامل (من الصفر للاحتراف)", "price": "150 جنيه"},
+    "book_idioms": {"name": "📙 كتاب المصطلحات الأمريكية الدارجة (Slang)", "price": "100 جنيه"},
+    "pack_audio": {"name": "🎧 الحقيبة الصوتية لتقوية مهارة الاستماع والنطق", "price": "250 جنيه"},
+    "course_vip": {"name": "👑 كورس القناة الخاصة المدمج + متابعة وتصحيح يومي", "price": "400 جنيه"}
 }
 
-# لوحة الأزرار الرئيسية المحدثة بالكامل شاملة المتجر
 def get_main_keyboard():
     keyboard = types.InlineKeyboardMarkup(row_width=1)
     btn1 = types.InlineKeyboardButton("🇺🇸 ➡️ 🇵🇸 English to Arabic", callback_data="mode_en_to_ar")
@@ -65,11 +65,9 @@ def get_main_keyboard():
     keyboard.add(btn1, btn2, btn3, btn4, btn5, btn6)
     return keyboard
 
-# لوحة أزرار المتجر
 def get_shop_keyboard():
     keyboard = types.InlineKeyboardMarkup(row_width=1)
     for item_id, item_info in SHOP_ITEMS.items():
-        # زر لكل منتج يوضح الاسم والسعر
         btn_text = f"{item_info['name']} 💰 {item_info['price']}"
         keyboard.add(types.InlineKeyboardButton(btn_text, callback_data=f"buy_{item_id}"))
     keyboard.add(types.InlineKeyboardButton("🔙 العودة للقائمة الرئيسية", callback_data="back_to_main"))
@@ -88,7 +86,6 @@ def check_translation(text, source_lang, target_lang):
         return SLANG_DICTIONARY[clean_text]
     return GoogleTranslator(source=source_lang, target=target_lang).translate(text)
 
-# دالة معالجة النصوص والترجمة الموحدة للبوت الرئيسي والنسخ
 def setup_bot_handlers(target_bot):
     @target_bot.message_handler(commands=['start'])
     def send_welcome(message):
@@ -119,33 +116,33 @@ def setup_bot_handlers(target_bot):
         elif call.data == "mode_levels_menu":
             target_bot.send_message(chat_id, "📊 **اختر مستواك الحالي الحقيقي:**", reply_markup=get_levels_keyboard())
         
-        # كود فتح المتجر الشامل
         elif call.data == "mode_shop_menu":
             shop_text = (
                 "🛍️ **مرحباً بك في متجر الأدوات والكتب الاحترافية!**\n\n"
-                "إليك أفضل الكتب والحقائب التعليمية المختارة بعناية لرفع مستواك إلى الاحتراف والطلاقة. "
-                "اختر المنتج الذي ترغب بشرائه من الأزرار أدناه: 👇"
+                "اختر المنتج الذي ترغب بشرائه من الأزرار أدناه لعرض بيانات تحويل فودافون كاش التلقائية: 👇"
             )
             target_bot.send_message(chat_id, shop_text, reply_markup=get_shop_keyboard(), parse_mode="Markdown")
             
-        # كود معالجة ضغط أزرار الشراء داخل المتجر
         elif call.data.startswith("buy_"):
-            item_id = call.data.split("_")[1] + "_" + call.data.split("_")[2]
+            parts = call.data.split("_")
+            item_id = parts[1] + "_" + parts[2]
             item_info = SHOP_ITEMS.get(item_id)
             
             if item_info:
-                # إنشاء لوحة زر التوجيه للخاص بك
-                purchase_crypto_keyboard = types.InlineKeyboardMarkup()
-                url_button = types.InlineKeyboardButton(text="💬 تواصل مع المطور لشراء المنتج", url=f"t.me/{ADMIN_USERNAME}")
-                purchase_crypto_keyboard.add(url_button)
-                
-                success_order_text = (
-                    f"🛒 **طلب شراء جديد ومميز:**\n\n"
+                # رسالة الدفع المباشر عبر فودافون كاش
+                payment_text = (
+                    f"🛒 **طلب شراء جديد:**\n\n"
                     f"📦 **المنتج:** {item_info['name']}\n"
-                    f"💰 **السعر:** `{item_info['price']}`\n\n"
-                    f"⚙️ لإتمام عملية الدفع واستلام ملفاتك وموادك التعليمية فوراً، يرجى الضغط على الزر بالأسفل للتواصل مباشرة مع المطور أدمن البوت على الخاص! 👇"
+                    f"💰 **المطلوب سداده:** `{item_info['price']}`\n\n"
+                    f"💳 **بيانات تحويل فودافون كاش (Vodafone Cash):**\n"
+                    f"📱 **رقم التحويل:** `{VODAFONE_NUMBER}`\n"
+                    f"👤 **باسم:** {VODAFONE_NAME}\n\n"
+                    f"⚠️ **خطوات إتمام الطلب:**\n"
+                    f"1️⃣ قم بتحويل المبلغ المطلق للرقم الموضح بالأعلى.\n"
+                    f"2️⃣ خذ لقطة شاشة (Screenshot) لإيصال التحويل الناجح.\n"
+                    f"3️⃣ أرسل الصورة هنا داخل البوت لتأكيد طلبك وسنقوم بتسليمك الملفات فوراً!"
                 )
-                target_bot.send_message(chat_id, success_order_text, reply_markup=purchase_crypto_keyboard, parse_mode="Markdown")
+                target_bot.send_message(chat_id, payment_text, parse_mode="Markdown")
 
         elif call.data == "mode_make_bot":
             user_modes[chat_id] = 'waiting_for_token'
@@ -229,8 +226,8 @@ def setup_bot_handlers(target_bot):
         except Exception:
             target_bot.edit_message_text("❌ حدث خطأ أثناء المعالجة.", chat_id, waiting_msg.message_id)
 
-# تشغيل البوت الرئيسي وتطبيق الـ Handlers عليه
+# تشغيل البوت
 if __name__ == '__main__':
     setup_bot_handlers(bot)
-    print("البوت الرئيسي وصانع البوتات الذكي مع المتجر يعمل الآن بنجاح...")
+    print("البوت يعمل بنجاح مع نظام دفع فودافون كاش المباشر...")
     bot.infinity_polling()
