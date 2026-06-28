@@ -15,7 +15,24 @@ bot = telebot.TeleBot(TOKEN)
 user_modes = {}
 user_levels = {}
 
-# قاموس لتصحيح الأخطاء الشائعة والبدائية تلقائياً لزيادة ذكاء البوت
+# قاموس الاختصارات المطور: يعطي الجملة الإنجليزية الكاملة والترجمة العربية
+SLANG_DICTIONARY = {
+    "btw": "By the way ⬅️ (بالمناسبة / على فكرة)",
+    "omg": "Oh my god ⬅️ (يا إلهي / أو ماي جاد)",
+    "lol": "Laugh out loud ⬅️ (الضحك بصوت عالٍ / ههههه)",
+    "idk": "I don't know ⬅️ (لا أعرف / لست أدري)",
+    "tbh": "To be honest ⬅️ (بكل صراحة / لكي أكون صادقاً)",
+    "smh": "Shaking my head ⬅️ (أهز رأسي تعجباً / مش عاجبني الوضع)",
+    "brb": "Be right back ⬅️ (سأعود فوراً / برب)",
+    "g2g": "Got to go ⬅️ (يجب أن أذهب الآن)",
+    "imo": "In my opinion ⬅️ (في رأيي الشخصي)",
+    "nvm": "Never mind ⬅️ (لا تهتم / انسى الأمر)",
+    "asap": "As soon as possible ⬅️ (في أقرب وقت ممكن)",
+    "afk": "Away from keyboard ⬅️ (بعيد عن الشاشة / اللعبة)",
+    "wth": "What the hell ⬅️ (ما هذا بحق الجحيم!)",
+    "idc": "I don't care ⬅️ (لا يهمني / طنش)"
+}
+
 COMMON_CORRECTIONS = {
     "tebol": "table",
     "set in": "sat on",
@@ -28,7 +45,6 @@ COMMON_CORRECTIONS = {
     "they is": "they are"
 }
 
-# بنك جمل ضخم ومتنوع لكل لفل (يتم الاختيار منها عشوائياً)
 LEVELS_DATA = {
     1: {
         "title": "🌱 لفل 1 - المبتدئ الشامل",
@@ -42,7 +58,6 @@ LEVELS_DATA = {
     },
     2: {
         "title": "🌿 لفل 2 - المبتدئ المتقدم",
-        "intro": "ممتاز! بدأت تدخل في تركيب الجمل اليومية. إليك جملة هذا المستوى:\n\n💬 اضغط لنسخها:\n`I want to learn English to get a good job.`\n\n💡 تعني: أريد أن أتعلم الإنجليزية لأحصل على وظيفة جيدة.",
         "sentences": [
             {"en": "I want to learn English to get a good job.", "ar": "أريد أن أتعلم الإنجليزية لأحصل على وظيفة جيدة."},
             {"en": "We should go to the supermarket tonight.", "ar": "ينبغي أن نذهب إلى السوبرماركت الليلة."},
@@ -83,13 +98,6 @@ LEVELS_DATA = {
     }
 }
 
-SMART_DICTIONARY = {
-    "hello": {"pron": "هَلُوو 🗣️", "ex_en": "Hello! How are you today? 🤔", "ex_ar": "مرحباً! كيف حالك اليوم؟"},
-    "same": {"pron": "سِيوْم 🗣️", "ex_en": "We have the same opinion. 🤝", "ex_ar": "لدينا نفس الرأي."},
-    "opinion": {"pron": "أُوبِينْيُوْن 🗣️", "ex_en": "In my opinion, you are right. 👍", "ex_ar": "في رأيي، أنت على حق."},
-    "success": {"pron": "سَكْسِيسْ 🗣️", "ex_en": "Confidence is the key to success. 🔑", "ex_ar": "الثقة هي مفتاح النجاح."}
-}
-
 def get_main_keyboard():
     keyboard = types.InlineKeyboardMarkup(row_width=1)
     btn1 = types.InlineKeyboardButton("🇺🇸 ➡️ 🇵🇸 English to Arabic", callback_data="mode_en_to_ar")
@@ -109,6 +117,13 @@ def get_levels_keyboard():
     btn_back = types.InlineKeyboardButton("🔙 العودة للقائمة الرئيسية", callback_data="back_to_main")
     keyboard.add(btn1, btn2, btn3, btn4, btn5, btn_back)
     return keyboard
+
+# دالة ذكية لفحص وترجمة النص التلقائي والاختصارات بجملها الكاملة
+def check_translation(text, source_lang, target_lang):
+    clean_text = text.lower().strip()
+    if source_lang == 'en' and clean_text in SLANG_DICTIONARY:
+        return SLANG_DICTIONARY[clean_text]
+    return GoogleTranslator(source=source_lang, target=target_lang).translate(text)
 
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
@@ -146,9 +161,7 @@ def callback_inline(call):
         user_levels[chat_id] = lvl_num
         user_modes[chat_id] = f'learning_lvl_{lvl_num}'
         
-        # اختيار جملة عشوائية تماماً من بنك الجمل للمستوى المحدد
         random_sentence = random.choice(LEVELS_DATA[lvl_num]["sentences"])
-        
         response = (
             f"🎯 **تم تحديد مستواك بنجاح في:**\n{LEVELS_DATA[lvl_num]['title']}\n\n"
             f"📥 **إليك جملة عشوائية مخصصة لتتعلمها الآن:**\n"
@@ -171,24 +184,21 @@ def handle_all_messages(message):
     
     try:
         if current_mode == 'en_to_ar':
-            translated = GoogleTranslator(source='en', target='ar').translate(user_text)
-            res = f"🇺🇸 **النص الاصلي:**\n`{user_text}`\n\n🇵🇸 **الترجمة (اضغط للنسخ):**\n`{translated}`"
+            translated = check_translation(user_text, 'en', 'ar')
+            res = f"🇺🇸 **النص الاصلي:**\n`{user_text}`\n\n🇵🇸 **الترجمة الكاملة (اضغط للنسخ):**\n`{translated}`"
             bot.edit_message_text(res, chat_id, waiting_msg.message_id, parse_mode="Markdown")
 
         elif current_mode == 'ar_to_en':
-            translated = GoogleTranslator(source='ar', target='en').translate(user_text)
-            res = f"🇵🇸 **النص الاصلي:**\n`{user_text}`\n\n🇺🇸 **الترجمة (اضغط للنسخ):**\n`{translated}`"
+            translated = check_translation(user_text, 'ar', 'en')
+            res = f"🇵🇸 **النص الاصلي:**\n`{user_text}`\n\n🇺🇸 **الترجمة الكاملة (اضغط للنسخ):**\n`{translated}`"
             bot.edit_message_text(res, chat_id, waiting_msg.message_id, parse_mode="Markdown")
 
         elif current_mode == 'smart_teacher':
+            translated = check_translation(user_text, 'en', 'ar')
             if " " not in user_text:
-                word_clean = user_text.lower()
-                translated = GoogleTranslator(source='en', target='ar').translate(user_text)
-                pron = SMART_DICTIONARY.get(word_clean, {}).get('pron', "متاح سماعياً 🗣️")
-                response = f"🇺🇸 **الكلمة:** `{user_text.upper()}`\n🎈 **معناها:** `{translated}`\n📢 **نطقها التقريبي:** {pron}"
+                response = f"🇺🇸 **الكلمة:** `{user_text.upper()}`\n🎈 **معناها وجملتها الكاملة:**\n`{translated}`"
             else:
-                translated = GoogleTranslator(source='en', target='ar').translate(user_text)
-                response = f"🇺🇸 **الجملة:** `{user_text}`\n🇵🇸 **ترجمتها:** `{translated}`"
+                response = f"🇺🇸 **الجملة:** `{user_text}`\n🇵🇸 **ترجمتها الدقيقة:**\n`{translated}`"
             bot.edit_message_text(response, chat_id, waiting_msg.message_id, parse_mode="Markdown")
             
         elif current_mode.startswith('learning_lvl_'):
@@ -205,22 +215,22 @@ def handle_all_messages(message):
                     corrected_text = text_lower.replace(wrong, right)
                     break
             
-            if has_errors or ("tebol" in text_lower) or ("set in" in text_lower):
-                translated_correct = GoogleTranslator(source='en', target='ar').translate(corrected_text)
+            if has_errors or ("tebol" in text_lower):
+                translated_correct = check_translation(corrected_text, 'en', 'ar')
                 response = (
                     f"📊 **تحليل ذكي لـ [ لفل {current_lvl} ]:**\n\n"
-                    f"❌ **جملتك المكتوبة (بها أخطاء):**\n`{user_text}`\n\n"
-                    f"✅ **التصحيح الصحيح للجملة:**\n`{corrected_text}`\n\n"
-                    f"🇵🇸 **الترجمة الصحيحة والمنسقة:**\n`{translated_correct}`\n\n"
+                    f"❌ **جملتك المكتوبة:**\n`{user_text}`\n\n"
+                    f"✅ **التصحيح الكامل:**\n`{corrected_text}`\n\n"
+                    f"🇵🇸 **الترجمة والمعنى بالكامل:**\n`{translated_correct}`\n\n"
                     f"⚠️ **تنبيه المطور قصي التعليمي:**\n"
-                    f"لقد قمت بكتابة بعض الكلمات بشكل خاطئ قواعدياً أو إملائياً، يرجى مراجعة الجملة المصححة بالأعلى والضغط عليها لنسخها وحفظها! 🧠"
+                    f"يرجى مراجعة الجملة المصححة بالأعلى والضغط عليها لنسخها وحفظها! 🧠"
                 )
             else:
-                translated = GoogleTranslator(source='en', target='ar').translate(user_text)
+                translated = check_translation(user_text, 'en', 'ar')
                 response = (
                     f"📊 **تحليل ذكي لـ [ لفل {current_lvl} ]:**\n\n"
                     f"🇺🇸 **جملتك المكتوبة:**\n`{user_text}`\n\n"
-                    f"🇵🇸 **ترجمتها الدقيقة:**\n`{translated}`\n\n"
+                    f"🇵🇸 **الترجمة والمعنى الكامل:**\n`{translated}`\n\n"
                     f"{feedback}"
                 )
             bot.edit_message_text(response, chat_id, waiting_msg.message_id, parse_mode="Markdown")
