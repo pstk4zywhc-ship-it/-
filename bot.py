@@ -18,10 +18,10 @@ TOKEN_BOT_2 = "8704063502:AAFkLjIbI2MuM2dk9rY0d7qP-yaav4w-w-w"
 bot1 = telebot.TeleBot(TOKEN_BOT_1)
 bot2 = telebot.TeleBot(TOKEN_BOT_2)
 
-# 🛑 ضَعْ هُنَا الـ Chat ID الرقمي الخاص بك (استخرجه وضعه هنا ليصبح البوت خاص بك تماماً)
+# 🛑 ضع الـ ID الرقمي الخاص بك هنا ليفتح لك البوت الصلاحيات الكاملة
 ADMIN_CHAT_ID = 123456789  
 
-# بيانات فودافون كاش
+# بيانات فودافون كاش (قابلة للتغيير ديناميكياً من بوت الأدمن)
 VODAFONE_NUMBER = "01094609897"
 VODAFONE_NAME = "نعيمه"
 
@@ -30,7 +30,8 @@ FREE_MODE = False
 user_modes = {}
 user_levels = {}
 active_clones = {}
-total_users_interacted = set()  
+total_users_interacted = set()  # لتخزين الـ IDs واستخدامها في الإذاعة
+waiting_for_broadcast = False  # لحالة إرسال الإذاعة
 
 SLANG_DICTIONARY = {
     "btw": "By the way ⬅️ (بالمناسبة / على فكرة)",
@@ -56,25 +57,41 @@ LEVELS_DATA = {
     5: {"title": "👑 لفل 5 - المحترف الخبير", "sentences": [{"en": "Advanced algorithms enhance system efficiency substantially.", "ar": "إن خوارزميات التعلم الآلي المتقدمة تعزز كفاءة النظام بشكل كبير."}]}
 }
 
+# 📦 روابط تحميل المنتجات الحقيقية لتسليمها فوراً عند الشراء المجاني أو تفعيل الطلب
 SHOP_ITEMS = {
-    "book_grammar": {"name": "📘 كتاب القواعد الشامل (من الصفر للاحتراف)", "price": 150},
-    "book_idioms": {"name": "📙 كتاب المصطلحات الأمريكية الدارجة (Slang)", "price": 100},
-    "pack_audio": {"name": "🎧 الحقيبة الصوتية لتقوية مهارة الاستماع والنطق", "price": 250},
-    "course_vip": {"name": "👑 كورس القناة الخاصة المدمج + متابعة وتصحيح يومي", "price": 400}
+    "book_grammar": {
+        "name": "📘 كتاب القواعد الشامل (من الصفر للاحتراف)", 
+        "price": 150,
+        "download_url": "https://t.me/YourLink_GrammarBook" # 👈 ضع رابط التحميل الحقيقي هنا
+    },
+    "book_idioms": {
+        "name": "📙 كتاب المصطلحات الأمريكية الدارجة (Slang)", 
+        "price": 100,
+        "download_url": "https://t.me/YourLink_SlangBook" # 👈 ضع رابط التحميل الحقيقي هنا
+    },
+    "pack_audio": {
+        "name": "🎧 الحقيبة الصوتية لتقوية مهارة الاستماع والنطق", 
+        "price": 250,
+        "download_url": "https://t.me/YourLink_AudioPack" # 👈 ضع رابط التحميل الحقيقي هنا
+    },
+    "course_vip": {
+        "name": "👑 كورس القناة الخاصة المدمج + متابعة وتصحيح يومي", 
+        "price": 400,
+        "download_url": "https://t.me/YourLink_VIP_Course" # 👈 ضع رابط القناة السرية هنا
+    }
 }
 
-# 🛠️ دالة تعيين الأوامر في الزر الأزرق تلقائياً (Menu Button)
+# 🛠️ تعيين الأوامر في الزر الأزرق تلقائياً (Menu Button)
 def set_bot_commands():
     try:
-        # أوامر بوت الأدمن الثنائى
         admin_commands = [
-            telebot.types.BotCommand("start", "🚀 تشغيل البوت وفتح لوحة التحكم"),
-            telebot.types.BotCommand("admin", "👑 فتح لوحة تحكم الأدمن السرية"),
+            telebot.types.BotCommand("start", "🚀 فتح لوحة التحكم الرئيسية"),
+            telebot.types.BotCommand("admin", "👑 لوحة تحكم الأدمن السرية"),
+            telebot.types.BotCommand("broadcast", "📢 عمل إذاعة لكل مستخدمين البوت"),
             telebot.types.BotCommand("myid", "🆔 معرفة رقم الـ ID الخاص بك")
         ]
         bot2.set_my_commands(admin_commands)
         
-        # أوامر بوت البرمجة والتعليم الأول
         user_commands = [
             telebot.types.BotCommand("start", "✨ البدء واختيار وضع الترجمة والتعليم")
         ]
@@ -110,12 +127,15 @@ def get_levels_keyboard():
     keyboard.add(types.InlineKeyboardButton("🔙 العودة للقائمة الرئيسية", callback_data="back_to_main"))
     return keyboard
 
+# كيبورد لوحة التحكم المتطورة للأدمن (بوت الإدارة)
 def get_admin_keyboard():
     keyboard = types.InlineKeyboardMarkup(row_width=1)
     status_text = "🔴 إيقاف الوضع المجاني (إعادة الدفع)" if FREE_MODE else "🟢 تفعيل الوضع المجاني (كل شيء بـ 0 جنيه)"
     btn_free = types.InlineKeyboardButton(status_text, callback_data="admin_toggle_free")
+    btn_clones = types.InlineKeyboardButton("🤖 عرض البوتات المصنوعة النشطة", callback_data="admin_view_clones")
+    btn_broadcast = types.InlineKeyboardButton("📢 إرسال إذاعة (Broadcast)", callback_data="admin_trigger_broadcast")
     btn_stats = types.InlineKeyboardButton("📊 تحديث عرض الإحصائيات", callback_data="admin_refresh_stats")
-    keyboard.add(btn_free, btn_stats)
+    keyboard.add(btn_free, btn_clones, btn_broadcast, btn_stats)
     return keyboard
 
 def check_translation(text, source_lang, target_lang):
@@ -141,25 +161,33 @@ def notify_admin(user_info, text_content=None, photo_id=None, caption=None):
         logging.error(f"Failed to notify admin: {e}")
 
 # ====================================================================
-# ⚙️ إعداد بوت الأدمن الثاني (أوامر التحكم والإحصائيات وتلقي الصور)
+# ⚙️ إعداد بوت الأدمن الثاني (لوحة التحكم المتطورة لقصي)
 # ====================================================================
 def setup_admin_bot_handlers():
     @bot2.message_handler(commands=['start', 'admin'])
     def admin_panel(message):
-        # طباعة الـ ID الحقيقي في الـ Logs لمساعدتك على معرفته فوراً
-        logging.info(f"👤 نداء من حساب ID: {message.from_user.id}")
+        global waiting_for_broadcast
+        waiting_for_broadcast = False
         
         stats_msg = (
-            f"👑 **مرحباً بك يا مطور قصي في لوحة تحكم بوت الأدمن:**\n\n"
-            f"🆔 رقم حسابك الحالي هو: `{message.from_user.id}`\n"
-            f"💡 (انسخ الرقم بالأعلى وضعه في الكود مكان `ADMIN_CHAT_ID` ليصبح البوت مخصصاً لك تماماً ومحمياً).\n\n"
+            f"👑 **مرحباً بك يا مطور قصي في لوحة تحكم بوت الأدمن المتطور:**\n\n"
+            f"🆔 رقم حسابك هو: `{message.from_user.id}`\n\n"
             f"📊 **إحصائيات المنظومة الحالية:**\n"
-            f"👥 إجمالي المستخدمين النشطين: `{len(total_users_interacted)}`\n"
+            f"👥 إجمالي المستخدمين النشطين بالذاكرة: `{len(total_users_interacted)}`\n"
             f"🤖 عدد البوتات المصنوعة والمستضافة: `{len(active_clones)}`\n"
-            f"⚙️ وضع المتجر الحالي: " + ("`🎁 مجاني بالكامل`" if FREE_MODE else "`💰 مدفوع (فودافون كاش)`") + "\n\n"
-            "👇 **اضغط على الأزرار بالأسفل للتحكم الفوري في الأوضاع:**"
+            f"⚙️ وضع المتجر الحالي: " + ("`🎁 مجاني بالكامل`" if FREE_MODE else "`💰 مدفوع (فودافون كاش)`") + "\n"
+            f"💳 بيانات الكاش الحالية: `{VODAFONE_NUMBER}` ({VODAFONE_NAME})\n\n"
+            "👇 **اختر من الأدوات المتقدمة لإدارة البوت بالكامل:**"
         )
         bot2.send_message(message.chat.id, stats_msg, reply_markup=get_admin_keyboard(), parse_mode="Markdown")
+
+    @bot2.message_handler(commands=['broadcast'])
+    def cmd_broadcast(message):
+        global waiting_for_broadcast
+        if message.from_user.id != ADMIN_CHAT_ID and ADMIN_CHAT_ID != 123456789:
+            return
+        waiting_for_broadcast = True
+        bot2.send_message(message.chat.id, "📢 **أهلاً قصي، أرسل الآن نص الإذاعة (رسالة، إعلان، تحديث) ليتم توجيهه فوراً للكل:**")
 
     @bot2.message_handler(commands=['myid'])
     def send_user_id(message):
@@ -167,11 +195,29 @@ def setup_admin_bot_handlers():
 
     @bot2.callback_query_handler(func=lambda call: call.data.startswith("admin_"))
     def admin_callback(call):
-        global FREE_MODE
+        global FREE_MODE, waiting_for_broadcast
         if call.data == "admin_toggle_free":
             FREE_MODE = not FREE_MODE
             status = "تم تفعيل الوضع المجاني في بوت البرمجة 🎁!" if FREE_MODE else "تم إيقاف الوضع المجاني وإعادة الدفع 💰!"
             bot2.answer_callback_query(call.id, status, show_alert=True)
+            
+        elif call.data == "admin_view_clones":
+            if not active_clones:
+                bot2.send_message(call.message.chat.id, "📭 لا توجد بوتات مصنوعة تعمل حالياً في الخلفية.")
+            else:
+                clones_list = "🤖 **قائمة البوتات المصنوعة التي تعمل الآن:**\n\n"
+                for idx, tkn in enumerate(active_clones.keys(), 1):
+                    clones_list += f"{idx} - `{tkn[:15]}...` (يعمل بنجاح ✅)\n"
+                bot2.send_message(call.message.chat.id, clones_list, parse_mode="Markdown")
+            bot2.answer_callback_query(call.id)
+            return
+            
+        elif call.data == "admin_trigger_broadcast":
+            waiting_for_broadcast = True
+            bot2.send_message(call.message.chat.id, "📢 **أرسل الآن نص الإذاعة الذي ترغب في تعميمه على المشتركين:**")
+            bot2.answer_callback_query(call.id)
+            return
+            
         elif call.data == "admin_refresh_stats":
             bot2.answer_callback_query(call.id, "🔄 تم تحديث البيانات الإحصائية!")
 
@@ -182,6 +228,28 @@ def setup_admin_bot_handlers():
             f"🤖 عدد البوتات المصنوعة والمستضافة: `{len(active_clones)}`"
         )
         bot2.edit_message_text(stats_msg, call.message.chat.id, call.message.message_id, reply_markup=get_admin_keyboard(), parse_mode="Markdown")
+
+    @bot2.message_handler(func=lambda message: waiting_for_broadcast)
+    def process_broadcast_message(message):
+        global waiting_for_broadcast
+        waiting_for_broadcast = False
+        broadcast_text = message.text
+        
+        if not total_users_interacted:
+            bot2.send_message(message.chat.id, "⚠️ لا يوجد مستخدمين مسجلين في الذاكرة لعمل إذاعة لهم حالياً.")
+            return
+            
+        success_count = 0
+        bot2.send_message(message.chat.id, f"⏳ جاري بدء الإذاعة لـ `{len(total_users_interacted)}` مستخدم...")
+        
+        for u_id in list(total_users_interacted):
+            try:
+                bot1.send_message(u_id, f"📢 **إشعار هام من الإدارة:**\n\n{broadcast_text}", parse_mode="Markdown")
+                success_count += 1
+            except Exception:
+                pass
+                
+        bot2.send_message(message.chat.id, f"✅ **تمت الإذاعة بنجاح!**\nوصلت الرسالة إلى `{success_count}` مستخدم بنجاح.")
 
 # ====================================================================
 # 🎓 إعداد بوت البرمجة والتعليم الأول (الخاص بالمستخدمين)
@@ -214,6 +282,7 @@ def setup_main_bot_handlers(target_bot):
     @target_bot.callback_query_handler(func=lambda call: not call.data.startswith("admin_"))
     def callback_inline(call):
         chat_id = call.message.chat.id
+        total_users_interacted.add(call.from_user.id)
         
         if call.data == "mode_en_to_ar":
             user_modes[chat_id] = 'en_to_ar'
@@ -240,11 +309,11 @@ def setup_main_bot_handlers(target_bot):
                     payment_text = (
                         f"🎁 **الوضع المجاني فعال للمطور قصي!**\n\n"
                         f"📦 **المنتج:** {item_info['name']}\n"
-                        f"💰 **السعر:** `0 جنيه (مقدم مجاناً كلياً)`\n\n"
-                        f"✅ تم فتح المنتج بنجاح! سيقوم البوت بإرسال رابط تحميل الملف لك مباشرة هنا."
+                        f"💰 **السعر:** `0 جنيه`\n\n"
+                        f"✅ **تم تسليم المنتج بنجاح! تفضل رابط التحميل:**\n🔗 {item_info['download_url']}"
                     )
                     target_bot.send_message(chat_id, payment_text, parse_mode="Markdown")
-                    notify_admin(call, text_content=f"🎁 **حصل على منتج مجاني في بوت البرمجة:** {item_info['name']}")
+                    notify_admin(call, text_content=f"🎁 **حصل على منتج مجاني وتم تسليمه تلقائياً:** {item_info['name']}")
                 else:
                     payment_text = (
                         f"🛒 **طلب شراء جديد:**\n\n"
@@ -284,10 +353,15 @@ def setup_main_bot_handlers(target_bot):
         user_text = message.text.strip()
         chat_id = message.chat.id
         current_mode = user_modes.get(chat_id, 'smart_teacher')
-
-        notify_admin(message, text_content=f"💬 **أرسل نصاً داخل البوت:**\n`{user_text}`\n⚙️ الوضع: `{current_mode}`")
+        total_users_interacted.add(message.from_user.id)
 
         if current_mode == 'waiting_for_token':
+            # منع تضارب الـ Conflict: لو قام المستخدم بوضع توكن البوت الأساسي نفسه لمنع انهيار السيرفر
+            if user_text in [TOKEN_BOT_1, TOKEN_BOT_2]:
+                target_bot.send_message(chat_id, "❌ غير مسموح باستخدام توكن البوت الأساسي داخل الصانع!")
+                user_modes[chat_id] = 'smart_teacher'
+                return
+                
             if ":" in user_text and len(user_text) > 30:
                 if user_text in active_clones:
                     target_bot.send_message(chat_id, "⚠️ هذا البوت يعمل بالفعل ومستضاف لدينا!")
@@ -352,7 +426,6 @@ def run_main_bot():
 
 def run_admin_bot():
     setup_admin_bot_handlers()
-    # تشغيل تعيين الأوامر تلقائياً فور بدء البوت
     set_bot_commands()
     bot2.infinity_polling()
 
