@@ -6,13 +6,11 @@ import telebot
 from telebot import types
 from deep_translator import GoogleTranslator
 
-# تفعيل تسجيل الأخطاء لمراقبة السيرفر
 logging.basicConfig(level=logging.INFO)
 
 # ==========================================
 # 🎫 إعداد التوكن وتحديد الـ ID الخاص بك
 # ==========================================
-# التوكن الخاص ببوت البرمجة والتعليم الأساسي
 TOKEN_BOT = "8759522486:AAHfUEiwijT8N2WdL9WbRCDk8gXor_Ka-IM" 
 bot = telebot.TeleBot(TOKEN_BOT)
 
@@ -32,9 +30,9 @@ class GlobalConfig:
     user_modes = {}
     user_levels = {}
     active_clones = {}
-    total_users_interacted = set()  # ذاكرة المشتركين للإذاعة
-    pending_orders = {}             # لتخزين الطلبات المعلقة [order_id -> data]
-    waiting_states = {}             # لتتبع مدخلات الأدمن النصية
+    total_users_interacted = set()  
+    pending_orders = {}             
+    waiting_states = {}             
 
 # قواميس البيانات الثابتة
 SLANG_DICTIONARY = {
@@ -54,15 +52,32 @@ LEVELS_DATA = {
     5: {"title": "👑 لفل 5 - المحترف الخبير", "sentences": [{"en": "Advanced algorithms enhance system efficiency substantially.", "ar": "إن خوارزميات التعلم الآلي المتقدمة تعزز كفاءة النظام بشكل كبير."}]}
 }
 
+# ⚠️ قم باستبدال الـ "FILE_ID_HERE" بالـ File ID الحقيقي للملف أو الفيديو الخاص بك على تليجرام
 SHOP_ITEMS = {
-    "book_grammar": {"name": "📘 كتاب القواعد الشامل (من الصفر للاحتراف)", "price": 150, "download_url": "https://t.me/YourLink_GrammarBook"},
-    "book_idioms": {"name": "📙 كتاب المصطلحات الأمريكية الدارجة (Slang)", "price": 100, "download_url": "https://t.me/YourLink_SlangBook"},
-    "pack_audio": {"name": "🎧 الحقيبة الصوتية لتقوية مهارة الاستماع والنطق", "price": 250, "download_url": "https://t.me/YourLink_AudioPack"},
-    "course_vip": {"name": "👑 كورس القناة الخاصة المدمج + متابعة وتصحيح يومي", "price": 400, "download_url": "https://t.me/YourLink_VIP_Course"}
+    "book_grammar": {
+        "name": "📘 كتاب القواعد الشامل (من الصفر للاحتراف)", 
+        "price": 150, 
+        "file_id": "FILE_ID_HERE_1"
+    },
+    "book_idioms": {
+        "name": "📙 كتاب المصطلحات الأمريكية الدارجة (Slang)", 
+        "price": 100, 
+        "file_id": "FILE_ID_HERE_2"
+    },
+    "pack_audio": {
+        "name": "🎧 الحقيبة الصوتية لتقوية مهارة الاستماع والنطق", 
+        "price": 250, 
+        "file_id": "FILE_ID_HERE_3"
+    },
+    "course_vip": {
+        "name": "👑 كورس القناة الخاصة المدمج + متابعة وتصحيح يومي", 
+        "price": 400, 
+        "file_id": "FILE_ID_HERE_4"
+    }
 }
 
 # ====================================================================
-# 🛠️ حقن أوامر الزر الأزرق (تظهر لك فقط أوامر الأدمن)
+# 🛠️ حقن أوامر الزر الأزرق
 # ====================================================================
 def set_bot_commands_for_user(chat_id, user_id):
     try:
@@ -143,9 +158,6 @@ def get_levels_keyboard():
     keyboard.add(types.InlineKeyboardButton("🔙 العودة للقائمة الرئيسية", callback_data="back_to_main"))
     return keyboard
 
-# ====================================================================
-# 👑 دالة إرسال لوحة التحكم للأدمن فقط
-# ====================================================================
 def send_admin_panel(chat_id):
     msg = (
         f"👑 **مرحباً بك يا غالي في نظام الإدارة المركزي المدمج حصرأً لك:**\n\n"
@@ -163,7 +175,6 @@ def send_admin_panel(chat_id):
 # ====================================================================
 def setup_bot_handlers(target_bot):
 
-    # 1. أوامر الأدمن الحصرية (لن تستجيب إلا للـ ID الخاص بك 8156357193)
     @target_bot.message_handler(commands=['admin', 'panel'])
     def cmd_admin_panel(message):
         if message.from_user.id != ADMIN_CHAT_ID: return
@@ -237,13 +248,11 @@ def setup_bot_handlers(target_bot):
         else:
             target_bot.send_message(message.chat.id, f"⏳ يوجد حالياً `{len(GlobalConfig.pending_orders)}` طلبات معلقة بانتظار مراجعتك.")
 
-    # 2. أمر التشغيل لجميع المستخدمين (تخصيص القائمة المنسدلة تلقائياً حسب الهوية)
     @target_bot.message_handler(commands=['start'])
     def welcome(message):
         chat_id = message.chat.id
         user_id = message.from_user.id
         
-        # تخصيص أزرار القائمة الزرقاء فوراً بناءً على الـ ID
         set_bot_commands_for_user(chat_id, user_id)
         
         if GlobalConfig.MAINTENANCE_MODE and user_id != ADMIN_CHAT_ID:
@@ -260,13 +269,11 @@ def setup_bot_handlers(target_bot):
             f"📊 **مستواك الحالي:** لفل {GlobalConfig.user_levels[chat_id]}\n\n"
             f"👇 **اختر نظام تشغيل البوت الذي تريده من الأزرار بالأسفل:**"
         )
-        # إذا كنت أنت الأدمن، نضيف لك رسالة تذكيرية سريعة
         if user_id == ADMIN_CHAT_ID:
             welcome_msg += "\n\n👑 **مرحباً بك يا غالي! أرسل /admin لفتح لوحة التحكم السرية في أي وقت.**"
             
         target_bot.send_message(chat_id, welcome_msg, reply_markup=get_main_keyboard(), parse_mode="Markdown")
 
-    # 3. معالجة استقبال كولباك الأزرار التفاعلية للأدمن
     @target_bot.callback_query_handler(func=lambda call: call.data.startswith("adm_"))
     def admin_inline_actions(call):
         if call.from_user.id != ADMIN_CHAT_ID: return
@@ -301,7 +308,6 @@ def setup_bot_handlers(target_bot):
             GlobalConfig.total_users_interacted.clear()
             target_bot.answer_callback_query(call.id, "🗑️ تم تصفير ذاكرة المشتركين!", show_alert=True)
 
-        # إعادة تحديث لوحة التحكم
         msg = (
             f"👑 **مرحباً بك يا غالي في نظام الإدارة المركزي المدمج حصرأً لك:**\n\n"
             f"📊 **حالة السيرفر والمنظومة الحالية:**\n"
@@ -312,7 +318,7 @@ def setup_bot_handlers(target_bot):
         )
         target_bot.edit_message_text(msg, call.message.chat.id, call.message.message_id, reply_markup=get_admin_main_keyboard(), parse_mode="Markdown")
 
-    # 4. معالجة قبول ورفض صور إيصالات الدفع (للأدمن فقط)
+    # 🔴 تعديل نظام المراجعة: البوت يرسل الملف نفسه للمستخدم مباشرة عند القبول بدلاً من الرابط
     @target_bot.callback_query_handler(func=lambda call: call.data.startswith("review_"))
     def review_processing(call):
         if call.from_user.id != ADMIN_CHAT_ID: return
@@ -329,15 +335,14 @@ def setup_bot_handlers(target_bot):
         item_info = order_data["item_info"]
         
         if action == "approve":
-            success_text = (
-                f"✅ **تهانينا! تمت مراجعة إيصال التحويل الخاص بك والموافقة عليه من قبل الإدارة!**\n\n"
-                f"📦 **المنتج:** {item_info['name']}\n"
-                f"🔗 **رابط التحميل المباشر الخاص بك:**\n{item_info['download_url']}\n\n"
-                f"🥇 شكراً لثقتك بنا وتمنياتنا لك بالتوفيق والنجاح الشامل!"
-            )
-            target_bot.send_message(user_chat_id, success_text, parse_mode="Markdown")
-            target_bot.edit_message_caption("🟢 **تم قبول هذا الطلب بنجاح وتسليم الملفات للمستخدم.**", call.message.chat.id, call.message.message_id)
-            target_bot.answer_callback_query(call.id, "✅ تم قبول المعاملة بنجاح!")
+            caption_msg = f"🎁 **تهانينا! تمت مراجعة إيصال التحويل الخاص بك والموافقة عليه!**\n\n📦 **المنتج:** {item_info['name']}\n🥇 تم إرسال الملف لك مباشرة بالأسفل بنجاح."
+            try:
+                # إرسال الملف الحقيقي مباشرة للمستخدم
+                target_bot.send_document(user_chat_id, item_info['file_id'], caption=caption_msg, parse_mode="Markdown")
+                target_bot.edit_message_caption("🟢 **تم قبول هذا الطلب بنجاح وتم تسليم الملف للمستخدم مباشرة.**", call.message.chat.id, call.message.message_id)
+            except Exception as e:
+                target_bot.send_message(ADMIN_CHAT_ID, f"❌ فشل إرسال الملف للمستخدم. تأكد من صحة الـ file_id الحقيقي. الخطأ: {e}")
+            target_bot.answer_callback_query(call.id, "✅ تم قبول المعاملة وتسليم الملف!")
             
         elif action == "reject":
             reject_text = (
@@ -350,7 +355,7 @@ def setup_bot_handlers(target_bot):
             
         GlobalConfig.pending_orders.pop(order_id, None)
 
-    # 5. معالجة استقبال كولباك أزرار المستخدمين العادية
+    # 🔴 تعديل وضع الشراء (المجاني والمدفوع): إرسال الملف مباشرة دون روابط نصية
     @target_bot.callback_query_handler(func=lambda call: not call.data.startswith("adm_") and not call.data.startswith("review_"))
     def user_callbacks(call):
         chat_id = call.message.chat.id
@@ -376,13 +381,12 @@ def setup_bot_handlers(target_bot):
             
             if item_info:
                 if GlobalConfig.FREE_MODE:
-                    free_text = (
-                        f"🎁 **الوضع المجاني فعال!**\n\n"
-                        f"📦 **المنتج:** {item_info['name']}\n"
-                        f"💰 **السعر:** `0 جنيه`\n\n"
-                        f"✅ **تم تسليم المنتج بنجاح! تفضل رابط التحميل:**\n🔗 {item_info['download_url']}"
-                    )
-                    target_bot.send_message(chat_id, free_text, parse_mode="Markdown")
+                    free_caption = f"🎁 **الوضع المجاني فعال للمطور قصي!**\n\n📦 **المنتج:** {item_info['name']}\n✅ تم رفع وإرسال الملف لك مباشرة بنجاح!"
+                    try:
+                        # إرسال الملف للمستخدم فوراً بدون روابط
+                        target_bot.send_document(chat_id, item_info['file_id'], caption=free_caption, parse_mode="Markdown")
+                    except Exception as e:
+                        target_bot.send_message(chat_id, "⚠️ عذراً، لم يتم ضبط معرف الملف (File ID) لهذا المنتج بشكل صحيح من قبل الإدارة بعد.")
                 else:
                     GlobalConfig.user_modes[chat_id] = f"waiting_payment_{item_id}"
                     pay_text = (
@@ -392,10 +396,10 @@ def setup_bot_handlers(target_bot):
                         f"💳 **بيانات تحويل فودافون كاش:**\n"
                         f"📱 **الرقم للتحويل:** `{GlobalConfig.VODAFONE_NUMBER}`\n"
                         f"👤 **باسم المستلم:** {GlobalConfig.VODAFONE_NAME}\n\n"
-                        f"⚠️ **خطوات التأكيد والاستلام الفوري:**\n"
+                        f"⚠️ **خطوات التأكيد واستلام ملفك فوراً:**\n"
                         f"1️⃣ قم بتحويل قيمة المنتج كاملاً للرقم الموضح.\n"
                         f"2️⃣ خذ لقطة شاشة (Screenshot) واضحة لإيصال المعاملة.\n"
-                        f"3️⃣ **قم بإرسال الصورة هنا داخل البوت مباشرة** وسيقوم المطور بمراجعتها فوراً وقبولها!"
+                        f"3️⃣ **قم بإرسال الصورة هنا داخل البوت مباشرة** وسيقوم المطور بمراجعتها ليقوم البوت بإرسال ملفك هنا تلقائياً!"
                     )
                     target_bot.send_message(chat_id, pay_text, parse_mode="Markdown")
 
@@ -406,7 +410,6 @@ def setup_bot_handlers(target_bot):
             target_bot.send_message(chat_id, "🔄 تم الرجوع للواجهة الرئيسية للبوت:", reply_markup=get_main_keyboard())
         target_bot.answer_callback_query(call.id)
 
-    # 6. معالجة الصور الواردة للتحقق من الدفع (إلى الأدمن حصرياً)
     @target_bot.message_handler(content_types=['photo'])
     def handle_payment_photo(message):
         chat_id = message.chat.id
@@ -430,17 +433,16 @@ def setup_bot_handlers(target_bot):
                     f"📦 **المنتج المطلوب:** {item_info['name']}\n"
                     f"💰 **المبلغ المطلوب:** {item_info['price']} جنيه\n"
                     f"🔢 **رقم معاملة الطلب:** `{order_id}`\n\n"
-                    f"👇 **اتخذ قرارك الآن بالضغط على الأزرار بالأسفل:**"
+                    f"👇 **اتخذ قرارك الآن بالضغط على الأزرار بالأسفل لتسليم الملف تلقائياً:**"
                 )
-                target_bot.send_photo(ADMIN_CHAT_ID, message.photo[-1].file_id, caption=admin_caption, reply_markup=get_order_review_keyboard(order_id), parse_mode="Markdown")
+                bot.send_photo(ADMIN_CHAT_ID, message.photo[-1].file_id, caption=admin_caption, reply_markup=get_order_review_keyboard(order_id), parse_mode="Markdown")
                 
-                target_bot.reply_to(message, "✅ **تم استلام صورة التحويل بنجاح!**\nتم إرسال الإيصال للإدارة لمراجعته؛ ستصلك رسالة هنا بالملفات فور الموافقة التلقائية مباشرة.")
+                target_bot.reply_to(message, "✅ **تم استلام صورة التحويل بنجاح!**\nتم إرسال الإيصال للإدارة لمراجعته؛ سيقوم البوت بإرسال الملف لك هنا مباشرة فور الموافقة.")
                 GlobalConfig.user_modes[chat_id] = 'smart_teacher'
                 return
         
         target_bot.reply_to(message, "📸 شكراً لإرسال الصورة! لشراء منتج، يرجى الضغط على زر الشراء من المتجر أولاً لربطه بالطلب.")
 
-    # 7. استقبال المدخلات الكتابية للأدمن (الإذاعة / البيانات المالية) التي لا تبدأ بـ /
     @target_bot.message_handler(func=lambda message: message.from_user.id == ADMIN_CHAT_ID and GlobalConfig.waiting_states.get(message.chat.id) is not None and not message.text.startswith('/'))
     def handle_admin_inputs(message):
         state = GlobalConfig.waiting_states.get(message.chat.id)
@@ -469,7 +471,6 @@ def setup_bot_handlers(target_bot):
             GlobalConfig.WELCOME_TEXT = message.text
             target_bot.send_message(message.chat.id, "✅ تم تحديث رسالة ترحيب البوت الرئيسي بنجاح!")
 
-    # 8. معالجة الرسائل النصية العادية والترجمة لجميع المستخدمين
     @target_bot.message_handler(func=lambda message: True)
     def handle_text_messages(message):
         user_text = message.text.strip()
@@ -516,10 +517,6 @@ def setup_bot_handlers(target_bot):
         except:
             target_bot.send_message(chat_id, "❌ عذراً، واجهت مشكلة فنية بسيطة أثناء المعالجة الآن.")
 
-# ====================================================================
-# 🚀 تشغيل البوت الموحد
-# ====================================================================
 if __name__ == '__main__':
     setup_bot_handlers(bot)
-    logging.info("🚀 تم دمج لوحة الإدارة وتفعيل الحماية لحساب قصي حصرأً!")
     bot.infinity_polling()
