@@ -1,14 +1,18 @@
+# -*- coding: utf-8 -*-
 import os
+import sys
+import io
 import requests
 import asyncio
 from telegram import Bot
 
-# التوكن الخاص بك مدمج هنا
-BOT_TOKEN = '8759522486:AAHfUEiwijT8N2WdL9WbRCDk8gXor_Ka-IM'
-# ضع معرف الشات الخاص بك هنا (يجب أن يكون رقم يبدأ بـ -100 إذا كانت قناة)
-CHAT_ID = 'ضع_معرف_الشات_هنا' 
-# ضع مفتاح API-Football هنا
-API_KEY = 'ضع_مفتاح_API_الخاص_بك_هنا'
+# ضبط ترميز المخرجات لدعم اللغة العربية والرموز
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+
+# قراءة الإعدادات من متغيرات البيئة في Railway
+BOT_TOKEN = os.getenv('BOT_TOKEN')
+CHAT_ID = os.getenv('CHAT_ID')
+API_KEY = os.getenv('API_KEY')
 
 bot = Bot(token=BOT_TOKEN)
 
@@ -21,6 +25,7 @@ async def check_live_matches():
         matches = response.get('response', [])
         
         if not matches:
+            print("لا توجد مباريات مباشرة حالياً.")
             return
 
         for match in matches:
@@ -31,15 +36,17 @@ async def check_live_matches():
             
             message = f"⚽ مباراة مباشرة:\n{home_team} {home_goals} - {away_goals} {away_team}"
             await bot.send_message(chat_id=CHAT_ID, text=message)
+            print(f"تم إرسال تحديث: {home_team} vs {away_team}")
             
     except Exception as e:
-        print(f"حدث خطأ: {e}")
+        print(f"حدث خطأ أثناء جلب البيانات: {e}")
 
 async def main():
-    print("البوت بدأ بالعمل...")
+    print("البوت بدأ بالعمل بنجاح...")
     while True:
         await check_live_matches()
-        await asyncio.sleep(300) # يفحص كل 5 دقائق
+        # الانتظار لمدة 5 دقائق (300 ثانية) قبل الفحص التالي
+        await asyncio.sleep(300) 
 
 if __name__ == '__main__':
     asyncio.run(main())
