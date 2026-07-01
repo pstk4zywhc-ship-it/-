@@ -1,2 +1,2 @@
-pyTelegramBotAPI
-deep-translator
+python-telegram-bot
+requests
