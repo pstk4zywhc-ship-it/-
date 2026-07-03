@@ -7,7 +7,7 @@ import time
 import json
 
 # استبدل 'YOUR_BOT_TOKEN' بـ token البوت الخاص بك
-bot = telebot.TeleBot('8759522486:AAHfUEiwijT8N2WdL9WbRCDk8gXor_Ka-IM')
+bot = telebot.TeleBot('8704063502:AAFkLjIbI2MuM2dk9rY0d7qP-yaav4w-w-w')
 
 # قاموس لتخزين أرقام الهواتف والحالات للمستخدمين
 user_data = {}
