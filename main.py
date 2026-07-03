@@ -1,5 +1,3 @@
-# ⚠️ حقوق محفوظة ¦ mora_brt_xx
-# 🔄 مسموح بالتحويل مع الحفاظ على حقوقي فقط
 import requests
 import json
 import time
